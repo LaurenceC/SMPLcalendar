@@ -329,7 +329,11 @@ function updateCalendar() {
     }
     
     const preview = document.querySelector('.preview');
-    preview.innerHTML = (format === 'html' || format === 'word') ? calendarContent : `<pre style="color: white;">${calendarContent}</pre>`;
+    if (format === 'text' || format === 'markdown') {
+        preview.innerHTML = `<pre style="color: #E6E6E6;">${calendarContent}</pre>`;
+    } else {
+        preview.innerHTML = calendarContent;
+    }
     document.getElementById('calendar-output').style.display = 'block';
     
     // Save state after generating calendar
@@ -481,7 +485,11 @@ function generateCalendar() {
     }
     
     const preview = document.querySelector('.preview');
-    preview.innerHTML = (format === 'html' || format === 'word') ? calendarContent : `<pre style="color: white;">${calendarContent}</pre>`;
+    if (format === 'text' || format === 'markdown') {
+        preview.innerHTML = `<pre style="color: #E6E6E6;">${calendarContent}</pre>`;
+    } else {
+        preview.innerHTML = calendarContent;
+    }
     document.getElementById('calendar-output').style.display = 'block';
     
     // Save state after generating calendar
@@ -519,7 +527,7 @@ function getDayStyle(date, projectStartDate, projectEndDate, dimWeekends) {
 }
 
 function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimWeekends) {
-    let calendarHtml = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">';
+    let calendarHtml = '';
     let currentDate = start;
     
     while (currentDate <= end) {
@@ -527,26 +535,23 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
         const monthEnd = endOfMonth(currentDate);
         const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-        calendarHtml += `
-            <div style="margin-bottom: 20px;">
-            <table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; width: 100%; max-width: 600px;">
-                <tr>
-                    <th colspan="7" style="background-color: #2D2D2D; color: white; padding: 10px; text-align: left; border: 1px solid #444444;">
-                        ${format(currentDate, 'yyyy MMMM')}
-                    </th>
-                </tr>
-                <tr style="background-color: #2D2D2D;">`;
+        calendarHtml += '<table bgcolor="#2D2D2D" style="border-collapse: collapse;" cellspacing="0" cellpadding="0" border="1" width="100%">' +
+            '<thead>' +
+            '<tr><th colspan="7" align="left" bgcolor="#2D2D2D" style="color: white; padding: 8px;">' +
+            format(currentDate, 'yyyy') + ' ' + format(currentDate, 'MMMM') +
+            '</th></tr><tr bgcolor="#E8E8E8">';
 
         // Weekday headers
-        const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-        weekDays.forEach(day => {
-            calendarHtml += `<th style="color: white; padding: 5px; text-align: center; border: 1px solid #444444;">${day}</th>`;
+        ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
+            calendarHtml += '<th align="center" width="14%" style="padding: 4px;">' + day + '</th>';
         });
-        calendarHtml += '</tr>';
+
+        calendarHtml += '</tr></thead><tbody>';
 
         let currentWeek = [];
         const firstDayOfMonth = getDay(monthStart);
 
+        // Fill in empty cells for the first week
         for (let i = 0; i < firstDayOfMonth; i++) {
             currentWeek.push('');
         }
@@ -559,6 +564,7 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
             }
         });
 
+        // Fill in empty cells for the last week
         if (currentWeek.length > 0) {
             while (currentWeek.length < 7) {
                 currentWeek.push('');
@@ -566,31 +572,26 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
             calendarHtml += createHtmlWeekRow(currentWeek, projectStartDate, projectEndDate, dimWeekends);
         }
 
-        calendarHtml += '</table></div>';
+        calendarHtml += '</tbody></table>';
         currentDate = addMonths(currentDate, 1);
     }
-
-    return calendarHtml + '</div>';
+    
+    return calendarHtml;
 }
 
 function createHtmlWeekRow(week, projectStartDate, projectEndDate, dimWeekends) {
-    let rowHtml = '<tr>';
+    let row = '<tr bgcolor="#2D2D2D">';
     week.forEach(day => {
         if (day === '') {
-            rowHtml += '<td style="border: 1px solid #444444;"></td>';
+            row += '<td align="center" style="color: white; padding: 4px;"></td>';
         } else {
-            const dayStyle = getDayStyle(day, projectStartDate, projectEndDate, dimWeekends);
             const isHolidayDate = isHoliday(day);
-            const textColor = isHolidayDate ? 'orange' : dayStyle.color;
-            
-            rowHtml += `
-                <td style="border: 1px solid #444444; text-align: center; color: ${textColor};">
-                    ${format(day, 'd')}
-                </td>
-            `;
+            const isWeekendDay = isWeekend(day);
+            const color = isHolidayDate ? '#FFA500' : (dimWeekends && isWeekendDay ? '#808080' : 'white');
+            row += '<td align="center" style="color: ' + color + '; padding: 4px;">' + format(day, 'd') + '</td>';
         }
     });
-    return rowHtml + '</tr>';
+    return row + '</tr>';
 }
 
 function generateTextCalendar(start, end, projectStartDate, projectEndDate, dimWeekends) {
@@ -760,17 +761,22 @@ async function copyToClipboard() {
     const format = getCurrentFormat();
     
     try {
-        const content = format === 'html' || format === 'word' ? preview.innerHTML : preview.textContent;
-        
-        // Use the modern Clipboard API with HTML format
-        if (format === 'word' || format === 'html') {
+        let content;
+        if (format === 'text' || format === 'markdown') {
+            content = preview.textContent.trim();
+            await navigator.clipboard.writeText(content);
+        } else {
+            // Clean up the HTML by removing extra whitespace
+            content = preview.innerHTML
+                .replace(/>\s+</g, '><')  // Remove whitespace between tags
+                .replace(/\s+/g, ' ')     // Replace multiple spaces with single space
+                .trim();                  // Remove leading/trailing whitespace
+            
             const clipboardItem = new ClipboardItem({
                 'text/html': new Blob([content], { type: 'text/html' }),
-                'text/plain': new Blob([preview.textContent], { type: 'text/plain' })
+                'text/plain': new Blob([preview.textContent.trim()], { type: 'text/plain' })
             });
             await navigator.clipboard.write([clipboardItem]);
-        } else {
-            await navigator.clipboard.writeText(content);
         }
         
         successMessage.classList.add('show');
@@ -780,22 +786,18 @@ async function copyToClipboard() {
     } catch (err) {
         console.error('Clipboard error:', err);
         // Fallback to older method if Clipboard API fails
-        try {
-            const textarea = document.createElement('textarea');
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            textarea.value = content;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            
-            successMessage.classList.add('show');
-            setTimeout(() => {
-                successMessage.classList.remove('show');
-            }, 2000);
-        } catch (fallbackErr) {
-            alert('Failed to copy to clipboard. Please try selecting and copying manually.');
-        }
+        const textarea = document.createElement('textarea');
+        textarea.value = format === 'text' || format === 'markdown' 
+            ? preview.textContent.trim() 
+            : preview.innerHTML.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        successMessage.classList.add('show');
+        setTimeout(() => {
+            successMessage.classList.remove('show');
+        }, 2000);
     }
 }

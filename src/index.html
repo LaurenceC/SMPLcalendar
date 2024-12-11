@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Generator for OneNote</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1E1E1E;
+            color: #E6E6E6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #E6E6E6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .controls-wrapper {
+            background-color: #2D2D2D;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .top-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .date-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-input label {
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .date-input input[type="date"] {
+            flex: 1;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #2D2D2D;
+            color: #E6E6E6;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #E6E6E6;
+            cursor: pointer;
+        }
+
+        .format-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .format-option {
+            background-color: #363636;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .format-option:hover {
+            background-color: #404040;
+        }
+
+        .format-option.selected {
+            background-color: #E6E6E6;
+            color: #1E1E1E;
+        }
+
+        .format-option h3 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+        }
+
+        .format-option p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        .button {
+            background-color: #E6E6E6;
+            color: #1E1E1E;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #d0d0d0;
+        }
+
+        .preview {
+            background-color: #2D2D2D;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .success-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #E6E6E6;
+            color: #1E1E1E;
+            padding: 10px 20px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .success-message.show {
+            opacity: 1;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .holiday-manager {
+            background-color: #2D2D2D;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 400px;
+            margin-left: 20px;
+        }
+
+        .holiday-manager-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .holiday-manager-title {
+            margin: 0;
+            color: white;
+        }
+
+        .reset-holidays {
+            background: none;
+            border: none;
+            color: #E6E6E6;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s;
+        }
+
+        .reset-holidays:hover {
+            color: #8F8FFF;
+        }
+
+        .reset-holidays svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .holiday-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        #holidayName {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #2D2D2D;
+            color: #E6E6E6;
+            width: 100%;
+        }
+
+        .holiday-dates {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .date-inputs {
+            display: flex;
+            gap: 12px;
+        }
+
+        .date-input {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .date-input label {
+            font-size: 12px;
+            color: #E6E6E6;
+            white-space: nowrap;
+        }
+
+        .date-input input[type="date"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #2D2D2D;
+            color: #E6E6E6;
+            width: 100%;
+            min-width: 150px;
+        }
+
+        .holiday-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .holiday-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #363636;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .holiday-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .holiday-info {
+            flex: 1;
+        }
+
+        .holiday-name {
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .holiday-date {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .delete-holiday {
+            background: none;
+            border: none;
+            color: #FF6B6B;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .delete-holiday:hover {
+            color: #FF4F4F;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calendar Generator for OneNote</h1>
+        
+        <div class="main-content">
+            <div class="left-content">
+                <div class="controls-wrapper">
+                    <div class="top-controls">
+                        <div class="date-input">
+                            <label for="startDate">Start Date:</label>
+                            <input type="date" id="startDate" name="startDate">
+                        </div>
+                        <div class="date-input">
+                            <label for="endDate">End Date:</label>
+                            <input type="date" id="endDate" name="endDate">
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="dimWeekends" name="dimWeekends">
+                            Dim Weekends
+                        </label>
+                    </div>
+                    
+                    <div class="format-controls">
+                        <div class="format-option selected" data-format="html">
+                            <h3>HTML Table</h3>
+                            <p>Rich formatting, best for OneNote Online</p>
+                        </div>
+                        <div class="format-option" data-format="word">
+                            <h3>Word/OneNote Table</h3>
+                            <p>Optimized for Word and OneNote desktop</p>
+                        </div>
+                        <div class="format-option" data-format="text">
+                            <h3>Plain Text</h3>
+                            <p>Simple text table, works everywhere</p>
+                        </div>
+                        <div class="format-option" data-format="markdown">
+                            <h3>Markdown</h3>
+                            <p>For markdown-compatible editors</p>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="copy" class="button">Copy Calendars to Clipboard</button>
+                    </div>
+                </div>
+
+                <div id="calendar-output">
+                    <div class="preview"></div>
+                    <div class="success-message" id="successMessage">Copied to clipboard!</div>
+                </div>
+            </div>
+
+            <div class="holiday-manager">
+                <div class="holiday-manager-header">
+                    <h2 class="holiday-manager-title">Holiday Manager</h2>
+                    <button class="reset-holidays" id="resetHolidays" title="Reset to default US holidays">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="holiday-form">
+                    <input type="text" id="holidayName" placeholder="Holiday Name" />
+                    <div class="holiday-dates">
+                        <div class="date-inputs">
+                            <div class="date-input">
+                                <label for="holidayStartDate">Start Date:</label>
+                                <input type="date" id="holidayStartDate" />
+                            </div>
+                            <div class="date-input">
+                                <label for="holidayEndDate">End Date:</label>
+                                <input type="date" id="holidayEndDate" />
+                            </div>
+                        </div>
+                    </div>
+                    <button id="addHoliday" class="button">Add Holiday</button>
+                </div>
+                <div class="holiday-list" id="holidayList">
+                    <!-- Holidays will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

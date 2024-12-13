@@ -55,6 +55,8 @@ function loadConfig() {
 
 function renderHolidays() {
     const holidayList = document.getElementById('holidayList');
+    if (!holidayList) return;
+    
     holidayList.innerHTML = '';
     
     const holidays = loadHolidays();
@@ -70,12 +72,15 @@ function renderHolidays() {
         const holidayItem = document.createElement('div');
         holidayItem.className = 'holiday-item';
         
-        const nameSpan = document.createElement('span');
+        const holidayInfo = document.createElement('div');
+        holidayInfo.className = 'holiday-info';
+        
+        const nameSpan = document.createElement('div');
         nameSpan.textContent = holiday.name;
         nameSpan.className = 'holiday-name';
         
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'holiday-dates';
+        const dateSpan = document.createElement('div');
+        dateSpan.className = 'holiday-date';
         if (holiday.startDate === holiday.endDate) {
             dateSpan.textContent = format(new Date(holiday.startDate), 'MMM d, yyyy');
         } else {
@@ -85,49 +90,16 @@ function renderHolidays() {
         const deleteButton = document.createElement('button');
         deleteButton.className = 'delete-holiday';
         deleteButton.textContent = '×';
-        deleteButton.dataset.startDate = holiday.startDate;
-        deleteButton.dataset.endDate = holiday.endDate;
+        deleteButton.onclick = () => {
+            deleteHoliday(holiday.startDate, holiday.endDate);
+        };
         
-        const holidayInfo = document.createElement('div');
-        holidayInfo.className = 'holiday-info';
         holidayInfo.appendChild(nameSpan);
         holidayInfo.appendChild(dateSpan);
-        
         holidayItem.appendChild(holidayInfo);
         holidayItem.appendChild(deleteButton);
         holidayList.appendChild(holidayItem);
     });
-}
-
-function addHoliday(name, startDate, endDate = null) {
-    const holidays = loadHolidays();
-    const holiday = {
-        name,
-        startDate: startDate,
-        endDate: endDate || startDate
-    };
-    
-    holidays.push(holiday);
-    localStorage.setItem('holidays', JSON.stringify(holidays));
-    renderHolidays();
-    generateCalendar();
-}
-
-function deleteHoliday(startDate, endDate) {
-    const holidays = loadHolidays();
-    console.log('Before delete:', holidays);
-    console.log('Deleting holiday with startDate:', startDate, 'endDate:', endDate);
-    
-    const updatedHolidays = holidays.filter(h => {
-        const match = !(h.startDate === startDate && h.endDate === endDate);
-        console.log('Holiday:', h, 'Match:', match);
-        return match;
-    });
-    
-    console.log('After delete:', updatedHolidays);
-    localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
-    renderHolidays();
-    generateCalendar();
 }
 
 function loadHolidays() {
@@ -135,50 +107,70 @@ function loadHolidays() {
     return holidaysJson ? JSON.parse(holidaysJson) : [];
 }
 
-function isHoliday(date) {
-    const holidays = loadHolidays();
-    if (!holidays || holidays.length === 0) return false;
+function addHoliday(event) {
+    event.preventDefault();
     
-    return holidays.some(holiday => {
-        try {
-            const checkDate = new Date(date);
-            const holidayStart = new Date(holiday.startDate);
-            const holidayEnd = new Date(holiday.endDate || holiday.startDate);
-            
-            // Set time to midnight for comparison
-            checkDate.setHours(0, 0, 0, 0);
-            holidayStart.setHours(0, 0, 0, 0);
-            holidayEnd.setHours(0, 0, 0, 0);
-            
-            return checkDate >= holidayStart && checkDate <= holidayEnd;
-        } catch (e) {
-            console.error('Invalid date in holiday check:', holiday);
-            return false;
-        }
-    });
+    const nameInput = document.getElementById('holidayName');
+    const startDateInput = document.getElementById('holidayStartDate');
+    const endDateInput = document.getElementById('holidayEndDate');
+    
+    const name = nameInput.value.trim();
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value || startDate;
+    
+    if (!name || !startDate) {
+        alert('Please enter a holiday name and start date');
+        return;
+    }
+    
+    const holidays = loadHolidays();
+    const holiday = {
+        name,
+        startDate,
+        endDate
+    };
+    
+    holidays.push(holiday);
+    localStorage.setItem('holidays', JSON.stringify(holidays));
+    
+    // Clear form
+    nameInput.value = '';
+    startDateInput.value = '';
+    endDateInput.value = '';
+    
+    renderHolidays();
+    generateCalendar();
 }
 
-function getHolidayName(date) {
-    if (!currentConfig.holidays) return null;
+function deleteHoliday(startDate, endDate) {
+    const holidays = loadHolidays();
+    const updatedHolidays = holidays.filter(h => 
+        !(h.startDate === startDate && h.endDate === endDate)
+    );
     
-    const holiday = currentConfig.holidays.find(holiday => {
-        try {
-            const checkDate = new Date(date);
-            const holidayStart = new Date(holiday.startDate || holiday.date);
-            const holidayEnd = new Date(holiday.endDate || holiday.startDate || holiday.date);
-            
-            // Set time to midnight for comparison
-            checkDate.setHours(0, 0, 0, 0);
-            holidayStart.setHours(0, 0, 0, 0);
-            holidayEnd.setHours(0, 0, 0, 0);
-            
-            return checkDate >= holidayStart && checkDate <= holidayEnd;
-        } catch (e) {
-            console.error('Invalid date in holiday name check:', holiday);
-            return false;
-        }
-    });
-    return holiday ? holiday.name : null;
+    localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
+    renderHolidays();
+    generateCalendar();
+}
+
+function initializeEventListeners() {
+    // Add holiday form submission
+    const addHolidayButton = document.getElementById('addHoliday');
+    if (addHolidayButton) {
+        addHolidayButton.onclick = addHoliday;
+    }
+    
+    // Reset holidays button
+    const resetButton = document.querySelector('.reset-holidays');
+    if (resetButton) {
+        resetButton.onclick = () => {
+            const currentYear = new Date().getFullYear();
+            const defaultHolidays = getDefaultUSHolidays(currentYear);
+            localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
+            renderHolidays();
+            generateCalendar();
+        };
+    }
 }
 
 function getDefaultUSHolidays(year) {
@@ -236,203 +228,126 @@ function getDefaultUSHolidays(year) {
     ];
 }
 
-function initializeHolidaysIfFirstTime() {
-    const isFirstTime = !localStorage.getItem('holidaysInitialized');
-    if (isFirstTime) {
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize holidays if first time
+    if (!localStorage.getItem('holidays')) {
         const currentYear = new Date().getFullYear();
         const defaultHolidays = getDefaultUSHolidays(currentYear);
         localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
-        localStorage.setItem('holidaysInitialized', 'true');
-        return defaultHolidays;
-    }
-    return null;
-}
-
-function resetToDefaultHolidays() {
-    const currentYear = new Date().getFullYear();
-    const defaultHolidays = getDefaultUSHolidays(currentYear);
-    localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
-    
-    // Clear and rebuild the holiday list UI
-    const holidayList = document.getElementById('holidayList');
-    holidayList.innerHTML = '';
-    defaultHolidays.forEach(holiday => {
-        addHolidayToList(holiday);
-    });
-    
-    // Update the calendar
-    updateCalendar();
-}
-
-function addHolidayToList(holiday) {
-    const holidayItem = document.createElement('div');
-    holidayItem.className = 'holiday-item';
-    
-    let dateDisplay;
-    try {
-        const startDate = new Date(holiday.startDate);
-        const endDate = new Date(holiday.endDate);
-
-        if (holiday.endDate && holiday.endDate !== holiday.startDate) {
-            dateDisplay = `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
-        } else {
-            dateDisplay = format(startDate, 'MMM d, yyyy');
-        }
-    } catch (e) {
-        console.error('Invalid date in holiday:', holiday);
-        dateDisplay = 'Invalid date';
     }
     
-    holidayItem.innerHTML = `
-        <div class="holiday-info">
-            <div class="holiday-name">${holiday.name}</div>
-            <div class="holiday-date">${dateDisplay}</div>
-        </div>
-        <button class="delete-holiday" data-start-date="${holiday.startDate}" data-end-date="${holiday.endDate}">×</button>
-    `;
-    document.getElementById('holidayList').appendChild(holidayItem);
-}
-
-function updateCalendar() {
-    const startDate = new Date(document.getElementById('startDate').value);
-    const endDate = new Date(document.getElementById('endDate').value);
-    const dimWeekends = document.getElementById('dimWeekends').checked;
+    // Load and render holidays
+    renderHolidays();
     
-    if (!startDate || !endDate) {
-        alert('Please select both start and end dates');
-        return;
-    }
-
-    // Set the time portions for accurate comparison
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
-
-    // Get the first and last months to display
-    const start = startOfMonth(startDate);
-    const end = endOfMonth(endDate);
-    const format = getCurrentFormat();
+    // Initialize drag and drop
+    initializeDragAndDrop();
     
-    let calendarContent;
-    switch (format) {
-        case 'word':
-            calendarContent = generateWordCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-        case 'html':
-            calendarContent = generateHtmlCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-        case 'text':
-            calendarContent = generateTextCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-        case 'markdown':
-            calendarContent = generateMarkdownCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-    }
+    // Initialize event listeners
+    initializeEventListeners();
     
-    const preview = document.querySelector('.preview');
-    if (format === 'text' || format === 'markdown') {
-        preview.innerHTML = `<pre style="color: #E6E6E6;">${calendarContent}</pre>`;
-    } else {
-        preview.innerHTML = calendarContent;
-    }
-    document.getElementById('calendar-output').style.display = 'block';
-    
-    // Save state after generating calendar
-    saveLastState();
-}
+    // Add click event listeners to format options
+    document.querySelectorAll('.format-option').forEach(option => {
+        option.addEventListener('click', function() {
+            // Update selected state
+            document.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
 
-document.addEventListener('DOMContentLoaded', () => {
-    const copyButton = document.getElementById('copy');
-    const addHolidayButton = document.getElementById('addHoliday');
-    const resetHolidaysButton = document.getElementById('resetHolidays');
-    const holidayList = document.getElementById('holidayList');
-    const preview = document.querySelector('.preview');
-    const successMessage = document.getElementById('successMessage');
-    const formatOptions = document.querySelectorAll('.format-option');
-    const holidayStartDate = document.getElementById('holidayStartDate');
-    const holidayEndDate = document.getElementById('holidayEndDate');
-    const startDate = document.getElementById('startDate');
-    const endDate = document.getElementById('endDate');
-    const dimWeekends = document.getElementById('dimWeekends');
-    
-    // Load saved configuration
-    loadConfig();
-
-    // Generate initial calendar
-    generateCalendar();
-
-    copyButton.addEventListener('click', copyToClipboard);
-    
-    // Auto-update end date when start date changes
-    holidayStartDate.addEventListener('change', (e) => {
-        if (!holidayEndDate.value) {
-            holidayEndDate.value = e.target.value;
-        }
-        holidayEndDate.min = e.target.value; // Prevent end date before start date
-    });
-
-    // Generate calendar when inputs change
-    startDate.addEventListener('change', () => {
-        generateCalendar();
-        saveLastState();
-    });
-
-    endDate.addEventListener('change', () => {
-        generateCalendar();
-        saveLastState();
-    });
-
-    dimWeekends.addEventListener('change', () => {
-        generateCalendar();
-        saveLastState();
-    });
-    
-    addHolidayButton.addEventListener('click', () => {
-        const name = document.getElementById('holidayName').value.trim();
-        const startDate = holidayStartDate.value;
-        const endDate = holidayEndDate.value || startDate; // Use start date if end date is empty
-        
-        if (!name || !startDate) {
-            alert('Please enter holiday name and start date');
-            return;
-        }
-        
-        if (new Date(endDate) < new Date(startDate)) {
-            alert('End date must be after or equal to start date');
-            return;
-        }
-        
-        addHoliday(name, startDate, endDate);
-        
-        // Clear inputs
-        document.getElementById('holidayName').value = '';
-        holidayStartDate.value = '';
-        holidayEndDate.value = '';
-    });
-    
-    document.getElementById('holidayList').addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-holiday')) {
-            const startDate = e.target.dataset.startDate;
-            const endDate = e.target.dataset.endDate;
-            if (startDate && endDate) {
-                deleteHoliday(startDate, endDate);
+            // Get current calendar content in the new format
+            const startDateStr = document.getElementById('startDate').value;
+            const endDateStr = document.getElementById('endDate').value;
+            
+            if (startDateStr && endDateStr) {
+                const startDate = new Date(startDateStr);
+                const endDate = new Date(endDateStr);
+                const dimWeekends = document.getElementById('dimWeekends').checked;
+                
+                // Get the first and last months to display
+                const start = startOfMonth(startDate);
+                const end = endOfMonth(endDate);
+                
+                // Generate content in selected format for clipboard
+                const format = this.dataset.format;
+                let clipboardContent;
+                switch (format) {
+                    case 'word':
+                        clipboardContent = generateWordCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                    case 'html':
+                        clipboardContent = generateHtmlCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                    case 'text':
+                        clipboardContent = generateTextCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                    case 'markdown':
+                        clipboardContent = generateMarkdownCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                }
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(clipboardContent);
+                
+                // Show calendar preview if hidden
+                const calendarPreview = document.getElementById('calendar-preview');
+                if (calendarPreview.style.display === 'none') {
+                    calendarPreview.style.display = 'block';
+                    if (previewPosition.left && previewPosition.top) {
+                        calendarPreview.style.left = previewPosition.left;
+                        calendarPreview.style.top = previewPosition.top;
+                    }
+                }
             }
-        }
-    });
-    
-    formatOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            formatOptions.forEach(opt => opt.classList.remove('selected'));
-            option.classList.add('selected');
-            generateCalendar();
+            
             saveLastState();
         });
     });
+
+    // Add change handler for dim weekends
+    const dimWeekendsCheckbox = document.getElementById('dimWeekends');
+    if (dimWeekendsCheckbox) {
+        dimWeekendsCheckbox.addEventListener('change', () => {
+            generateCalendar();
+            saveLastState();
+        });
+    }
+
+    // Add change handlers for date inputs
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
     
-    resetHolidaysButton.addEventListener('click', () => {
-        if (confirm('This will reset all holidays to the default US holidays. Are you sure?')) {
-            resetToDefaultHolidays();
-        }
-    });
+    if (startDateInput) {
+        startDateInput.addEventListener('change', function() {
+            const startDate = new Date(this.value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            
+            if (this.value && document.getElementById('endDate').value) {
+                if (!validateDateRange(startDate, endDate)) {
+                    alert('Date range cannot exceed 16 months');
+                    this.value = ''; // Clear invalid date
+                    return;
+                }
+                generateCalendar();
+            }
+        });
+    }
+    
+    if (endDateInput) {
+        endDateInput.addEventListener('change', function() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(this.value);
+            
+            if (this.value && document.getElementById('startDate').value) {
+                if (!validateDateRange(startDate, endDate)) {
+                    alert('Date range cannot exceed 16 months');
+                    this.value = ''; // Clear invalid date
+                    return;
+                }
+                generateCalendar();
+            }
+        });
+    }
+    
+    // Generate initial calendar
+    generateCalendar();
 });
 
 function saveLastState() {
@@ -449,13 +364,128 @@ function getCurrentFormat() {
     return document.querySelector('.format-option.selected').dataset.format;
 }
 
+function updatePreviewTitle() {
+    const startDateStr = document.getElementById('startDate').value;
+    const endDateStr = document.getElementById('endDate').value;
+    const previewTitle = document.querySelector('.preview-title');
+    
+    if (!startDateStr || !endDateStr || !previewTitle) {
+        previewTitle.textContent = 'Calendar Preview';
+        return;
+    }
+    
+    try {
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+        
+        // Validate dates
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            previewTitle.textContent = 'Calendar Preview';
+            return;
+        }
+        
+        if (startDate.getFullYear() === endDate.getFullYear()) {
+            if (startDate.getMonth() === endDate.getMonth()) {
+                // Same month and year
+                previewTitle.textContent = format(startDate, 'MMMM yyyy');
+            } else {
+                // Same year, different months
+                previewTitle.textContent = `${format(startDate, 'MMM')} - ${format(endDate, 'MMM yyyy')}`;
+            }
+        } else {
+            // Different years
+            previewTitle.textContent = `${format(startDate, 'MMM yyyy')} - ${format(endDate, 'MMM yyyy')}`;
+        }
+    } catch (error) {
+        console.error('Error updating preview title:', error);
+        previewTitle.textContent = 'Calendar Preview';
+    }
+}
+
+// Store calendar preview position
+let previewPosition = { left: '50%', top: '50%' };
+
+function initializeCalendarPreview() {
+    const hidePreviewBtn = document.querySelector('.hide-preview');
+    const calendarPreview = document.getElementById('calendar-preview');
+
+    hidePreviewBtn.addEventListener('click', () => {
+        // Store position before hiding
+        previewPosition = {
+            left: calendarPreview.style.left,
+            top: calendarPreview.style.top
+        };
+        calendarPreview.style.display = 'none';
+    });
+
+    // Initialize drag functionality for calendar preview
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+
+    calendarPreview.addEventListener('mousedown', e => {
+        if (e.target === calendarPreview || e.target.classList.contains('preview-header')) {
+            isDragging = true;
+            initialX = e.clientX - calendarPreview.offsetLeft;
+            initialY = e.clientY - calendarPreview.offsetTop;
+        }
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (isDragging) {
+            e.preventDefault();
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+
+            calendarPreview.style.left = currentX + 'px';
+            calendarPreview.style.top = currentY + 'px';
+
+            // Update stored position
+            previewPosition = {
+                left: calendarPreview.style.left,
+                top: calendarPreview.style.top
+            };
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+}
+
+function showCalendarPreview() {
+    const calendarPreview = document.getElementById('calendar-preview');
+    if (calendarPreview.style.display === 'none') {
+        calendarPreview.style.display = 'block';
+        calendarPreview.style.left = previewPosition.left;
+        calendarPreview.style.top = previewPosition.top;
+    }
+}
+
+function validateDateRange(startDate, endDate) {
+    const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                     (endDate.getMonth() - startDate.getMonth());
+    return monthDiff <= 15; // 16 months including start month
+}
+
 function generateCalendar() {
-    const startDate = new Date(document.getElementById('startDate').value);
-    const endDate = new Date(document.getElementById('endDate').value);
+    const startDateStr = document.getElementById('startDate').value;
+    const endDateStr = document.getElementById('endDate').value;
     const dimWeekends = document.getElementById('dimWeekends').checked;
     
-    if (!startDate || !endDate) {
-        alert('Please select both start and end dates');
+    // Only proceed if we have both dates
+    if (!startDateStr || !endDateStr) {
+        return;
+    }
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    // Validate date range
+    if (!validateDateRange(startDate, endDate)) {
+        alert('Date range cannot exceed 16 months');
         return;
     }
 
@@ -463,38 +493,62 @@ function generateCalendar() {
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
+    // Update preview title
+    updatePreviewTitle();
+
     // Get the first and last months to display
     const start = startOfMonth(startDate);
     const end = endOfMonth(endDate);
-    const format = getCurrentFormat();
     
-    let calendarContent;
+    // Generate preview content (always Word format)
+    const previewContent = generateWordCalendar(start, end, startDate, endDate, dimWeekends);
+    
+    // Generate content in selected format for clipboard
+    const format = getCurrentFormat();
+    let clipboardContent;
     switch (format) {
         case 'word':
-            calendarContent = generateWordCalendar(start, end, startDate, endDate, dimWeekends);
+            clipboardContent = previewContent;
             break;
         case 'html':
-            calendarContent = generateHtmlCalendar(start, end, startDate, endDate, dimWeekends);
+            clipboardContent = generateHtmlCalendar(start, end, startDate, endDate, dimWeekends);
             break;
         case 'text':
-            calendarContent = generateTextCalendar(start, end, startDate, endDate, dimWeekends);
+            clipboardContent = generateTextCalendar(start, end, startDate, endDate, dimWeekends);
             break;
         case 'markdown':
-            calendarContent = generateMarkdownCalendar(start, end, startDate, endDate, dimWeekends);
+            clipboardContent = generateMarkdownCalendar(start, end, startDate, endDate, dimWeekends);
             break;
     }
     
+    // Update preview with Word format
     const preview = document.querySelector('.preview');
-    if (format === 'text' || format === 'markdown') {
-        preview.innerHTML = `<pre style="color: #E6E6E6;">${calendarContent}</pre>`;
-    } else {
-        preview.innerHTML = calendarContent;
-    }
-    document.getElementById('calendar-output').style.display = 'block';
+    preview.innerHTML = previewContent;
     
-    // Save state after generating calendar
+    // Calculate months difference for sizing
+    const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                     (endDate.getMonth() - startDate.getMonth()) + 1;
+    
+    // Make sure the preview is visible and positioned
+    const calendarPreview = document.getElementById('calendar-preview');
+    calendarPreview.style.display = 'block';
+    if (!calendarPreview.style.left && !calendarPreview.style.top) {
+        calendarPreview.style.left = '50%';
+        calendarPreview.style.top = '50%';
+    }
+    
+    // Adjust preview height based on number of months
+    preview.style.height = `${Math.min(70, Math.max(monthDiff * 15, 30))}vh`;
+    
+    // Copy selected format to clipboard
+    navigator.clipboard.writeText(clipboardContent);
+    
+    // Save state
     saveLastState();
 }
+
+// Initialize calendar preview when document is loaded
+document.addEventListener('DOMContentLoaded', initializeCalendarPreview);
 
 function isWeekend(date) {
     const day = getDay(date);
@@ -524,6 +578,53 @@ function getDayStyle(date, projectStartDate, projectEndDate, dimWeekends) {
     }
     
     return { color: '#E6E6E6' }; // Soft white for active days
+}
+
+function isHoliday(date) {
+    const holidays = loadHolidays();
+    if (!holidays || holidays.length === 0) return false;
+    
+    return holidays.some(holiday => {
+        try {
+            const checkDate = new Date(date);
+            const holidayStart = new Date(holiday.startDate);
+            const holidayEnd = new Date(holiday.endDate || holiday.startDate);
+            
+            // Set time to midnight for comparison
+            checkDate.setHours(0, 0, 0, 0);
+            holidayStart.setHours(0, 0, 0, 0);
+            holidayEnd.setHours(0, 0, 0, 0);
+            
+            return checkDate >= holidayStart && checkDate <= holidayEnd;
+        } catch (e) {
+            console.error('Invalid date in holiday check:', holiday);
+            return false;
+        }
+    });
+}
+
+function getHolidayName(date) {
+    const holidays = loadHolidays();
+    if (!holidays || holidays.length === 0) return null;
+    
+    const holiday = holidays.find(holiday => {
+        try {
+            const checkDate = new Date(date);
+            const holidayStart = new Date(holiday.startDate);
+            const holidayEnd = new Date(holiday.endDate || holiday.startDate);
+            
+            // Set time to midnight for comparison
+            checkDate.setHours(0, 0, 0, 0);
+            holidayStart.setHours(0, 0, 0, 0);
+            holidayEnd.setHours(0, 0, 0, 0);
+            
+            return checkDate >= holidayStart && checkDate <= holidayEnd;
+        } catch (e) {
+            console.error('Invalid date in holiday name check:', holiday);
+            return false;
+        }
+    });
+    return holiday ? holiday.name : null;
 }
 
 function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimWeekends) {
@@ -564,7 +665,6 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
             }
         });
 
-        // Fill in empty cells for the last week
         if (currentWeek.length > 0) {
             while (currentWeek.length < 7) {
                 currentWeek.push('');
@@ -580,7 +680,7 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
 }
 
 function createHtmlWeekRow(week, projectStartDate, projectEndDate, dimWeekends) {
-    let row = '<tr bgcolor="#2D2D2D">';
+    let row = '<tr>';
     week.forEach(day => {
         if (day === '') {
             row += '<td align="center" style="color: white; padding: 4px;"></td>';
@@ -755,49 +855,51 @@ function createWordWeekRow(week, projectStartDate, projectEndDate, dimWeekends) 
     return row;
 }
 
-async function copyToClipboard() {
-    const preview = document.querySelector('.preview');
-    const successMessage = document.getElementById('successMessage');
-    const format = getCurrentFormat();
-    
-    try {
-        let content;
-        if (format === 'text' || format === 'markdown') {
-            content = preview.textContent.trim();
-            await navigator.clipboard.writeText(content);
-        } else {
-            // Clean up the HTML by removing extra whitespace
-            content = preview.innerHTML
-                .replace(/>\s+</g, '><')  // Remove whitespace between tags
-                .replace(/\s+/g, ' ')     // Replace multiple spaces with single space
-                .trim();                  // Remove leading/trailing whitespace
+async function initializeDragAndDrop() {
+    const draggables = document.querySelectorAll('.draggable');
+    let selectedElement = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Set initial positions
+    draggables.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        element.style.position = 'absolute';
+        element.style.left = rect.left + 'px';
+        element.style.top = rect.top + 'px';
+
+        element.addEventListener('mousedown', function(e) {
+            // Ignore if clicking on input, button, or any interactive element
+            if (e.target.tagName.toLowerCase() === 'input' || 
+                e.target.tagName.toLowerCase() === 'button' ||
+                e.target.tagName.toLowerCase() === 'select' ||
+                e.target.tagName.toLowerCase() === 'textarea' ||
+                e.target.closest('.holiday-form') ||
+                e.target.closest('.format-controls')) {
+                return;
+            }
             
-            const clipboardItem = new ClipboardItem({
-                'text/html': new Blob([content], { type: 'text/html' }),
-                'text/plain': new Blob([preview.textContent.trim()], { type: 'text/plain' })
-            });
-            await navigator.clipboard.write([clipboardItem]);
+            e.preventDefault();
+            selectedElement = element;
+            const rect = element.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            element.classList.add('dragging');
+        });
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (selectedElement) {
+            e.preventDefault();
+            selectedElement.style.left = (e.clientX - offsetX) + 'px';
+            selectedElement.style.top = (e.clientY - offsetY) + 'px';
         }
-        
-        successMessage.classList.add('show');
-        setTimeout(() => {
-            successMessage.classList.remove('show');
-        }, 2000);
-    } catch (err) {
-        console.error('Clipboard error:', err);
-        // Fallback to older method if Clipboard API fails
-        const textarea = document.createElement('textarea');
-        textarea.value = format === 'text' || format === 'markdown' 
-            ? preview.textContent.trim() 
-            : preview.innerHTML.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        
-        successMessage.classList.add('show');
-        setTimeout(() => {
-            successMessage.classList.remove('show');
-        }, 2000);
-    }
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (selectedElement) {
+            selectedElement.classList.remove('dragging');
+            selectedElement = null;
+        }
+    });
 }

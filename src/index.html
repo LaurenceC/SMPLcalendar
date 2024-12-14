@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar Generator for OneNote</title>
     <style>
+        /* Global styles */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: #1E1E1E;
+            color: #E6E6E6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .container {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+        }
+
         /* Base styles */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -13,27 +31,119 @@
             margin: 0;
             padding: 20px;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 10px;
         }
 
         /* Common container styles */
         .controls-container,
-        .holiday-manager,
-        #calendar-preview {
+        .Flag-manager {
             background: #2D2D2D;
             border: 1px solid #444;
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
+            min-width: 300px;
+            max-width: 300px;
+            width: 300px;
+            flex: 1;
+        }
+
+        #calendar-preview {
+            background: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            position: fixed;
+            min-width: 300px;
+            max-width: 300px;
+            width: 300px;
+            height: auto;
+            min-height: 100px;
+            max-height: none;
+            z-index: 1000;
+            cursor: move;
+            overflow: visible;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        #calendar-preview::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
+        }
+
+        .controls-content,
+        .Flag-content {
+            background: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-width: 268px;
+            max-width: 268px;
+            width: 268px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 100px;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .controls-content::-webkit-scrollbar,
+        .Flag-content::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
+        }
+
+        /* Format options grid */
+        .format-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .format-option {
+            background: #3D3D3D;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 4px;
+            cursor: pointer;
+            text-align: center;
+            min-width: 40px;
+        }
+
+        .format-option h3 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .format-option.selected {
+            background: #4D4D4D;
+            border-color: #666;
+        }
+
+        .format-option:hover {
+            background: #4D4D4D;
         }
 
         /* Header styles */
         .controls-header,
-        .holiday-header,
+        .Flag-header,
         .preview-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 1px;
         }
 
         /* Input styles */
@@ -44,59 +154,31 @@
             color: #E6E6E6;
             padding: 4px;
             border-radius: 4px;
-            width: 120px;
+            width: 260px;
         }
 
         /* Button styles */
         button {
-            background: #444;
-            border: none;
+            background-color: #3D3D3D;
             color: #E6E6E6;
-            padding: 4px 8px;
+            border: 1px solid #444;
             border-radius: 4px;
+            padding: 2px 4px;
             cursor: pointer;
+            font-size: 12px;
+            height: 28px;
+            min-height: 28px;
         }
 
         button:hover {
-            background: #555;
+            background-color: #4D4D4D;
         }
 
-        /* Format options */
-        .format-options {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .format-option {
-            padding: 4px 8px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .format-option:hover {
-            background: #555;
-        }
-
-        .format-option.selected {
-            background: #444;
+        button:active {
+            background-color: #2D2D2D;
         }
 
         /* Layout containers */
-        .controls-content,
-        .holiday-content {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-
-        .controls-content::-webkit-scrollbar,
-        .holiday-content::-webkit-scrollbar {
-            display: none;  /* Chrome, Safari and Opera */
-        }
-
         .date-inputs {
             display: flex;
             gap: 10px;
@@ -109,19 +191,19 @@
             gap: 4px;
         }
 
-        /* Holiday list */
-        .holiday-list {
+        /* Flag list */
+        .Flag-list {
             max-height: 300px;
             overflow-y: auto;
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
         }
 
-        .holiday-list::-webkit-scrollbar {
+        .Flag-list::-webkit-scrollbar {
             display: none;  /* Chrome, Safari and Opera */
         }
 
-        .holiday-item {
+        .Flag-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -129,7 +211,7 @@
             border-bottom: 1px solid #444;
         }
 
-        .holiday-info {
+        .Flag-info {
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -137,31 +219,32 @@
 
         /* Calendar preview */
         .preview {
-            overflow: auto;
+            overflow: visible;
             padding: 10px;
             background: #2D2D2D;
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            height: auto;
+            border-radius: 4px;
         }
 
-        .preview::-webkit-scrollbar {
-            display: none;  /* Chrome, Safari and Opera */
+        .preview h2 {
+            margin-top: 0;
         }
 
-        #calendar-preview {
-            position: fixed;
-            min-width: 300px;
-            max-width: 90vw;
-            max-height: 90vh;
-            z-index: 1000;
-            cursor: move;
+        .preview table {
+            background: #2D2D2D;
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .preview table:last-child {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Calendar Generator for OneNote</h1>
-        
+                
         <div class="main-content">
             <div class="controls-container draggable">
                 <div class="controls-header">
@@ -187,20 +270,20 @@
                     
                     <div class="format-options">
                         <div class="format-option selected" data-format="html">
-                            <h3>HTML Table</h3>
-                            <p>Rich formatting, best for OneNote Online</p>
+                            <h3>HTML</h3>
+                      
                         </div>
                         <div class="format-option" data-format="word">
-                            <h3>Word/OneNote Table</h3>
-                            <p>Optimized for Word and OneNote desktop</p>
+                            <h3>ONE</h3>
+                
                         </div>
                         <div class="format-option" data-format="text">
-                            <h3>Plain Text</h3>
-                            <p>Simple text table, works everywhere</p>
+                            <h3>PLN</h3>
+             
                         </div>
                         <div class="format-option" data-format="markdown">
-                            <h3>Markdown</h3>
-                            <p>For markdown-compatible editors</p>
+                            <h3>_MD</h3>
+                  
                         </div>
                     </div>
                 </div>
@@ -218,31 +301,31 @@
                 <div class="preview"></div>
             </div>
 
-            <div class="holiday-manager draggable">
-                <div class="holiday-header">
-                    <h3 class="holiday-title">Holiday Manager</h3>
-                    <button class="reset-holidays" title="Reset to default US holidays">
+            <div class="Flag-manager draggable">
+                <div class="Flag-header">
+                    <h3 class="Flag-title">Flag Manager</h3>
+                    <button class="reset-Flags" title="Reset to default US Flags">
                         <svg viewBox="0 0 24 24" width="16" height="16">
                             <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
                         </svg>
                     </button>
                 </div>
-                <div class="holiday-content">
-                    <input type="text" id="holidayName" placeholder="Holiday Name" />
+                <div class="Flag-content">
+                    <input type="text" id="FlagName" placeholder="Flag Name" />
                     <div class="date-inputs">
                         <div class="date-input">
-                            <label for="holidayStartDate">Start Date:</label>
-                            <input type="date" id="holidayStartDate" />
+                            <label for="FlagStartDate">Start Date:</label>
+                            <input type="date" id="FlagStartDate" />
                         </div>
                         <div class="date-input">
-                            <label for="holidayEndDate">End Date:</label>
-                            <input type="date" id="holidayEndDate" />
+                            <label for="FlagEndDate">End Date:</label>
+                            <input type="date" id="FlagEndDate" />
                         </div>
                     </div>
-                    <button id="addHoliday" class="button">Add Holiday</button>
+                    <button id="addFlag" class="button">Add Flag</button>
                 </div>
-                <div class="holiday-list" id="holidayList">
-                    <!-- Holidays will be populated here -->
+                <div class="Flag-list" id="FlagList">
+                    <!-- Flags will be populated here -->
                 </div>
             </div>
         </div>

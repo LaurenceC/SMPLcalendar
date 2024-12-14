@@ -10,11 +10,11 @@ A standalone web application that generates beautiful calendar tables that can b
   - Text format for plain text editors
   - Markdown format for markdown editors
 
-- **Holiday Management**
-  - Add custom holidays with single dates or date ranges
-  - Built-in US holidays that can be reset anytime
-  - Holidays appear in orange on the calendar for easy visibility
-  - Edit or delete holidays as needed
+- **Flag Management**
+  - Add custom Flags with single dates or date ranges
+  - Built-in US Flags that can be reset anytime
+  - Flags appear in orange on the calendar for easy visibility
+  - Edit or delete Flags as needed
 
 - **Smart Calendar Generation**
   - Generate calendars for any date range
@@ -50,10 +50,10 @@ http://localhost:3000
 
 1. Select your desired calendar format (HTML, Word, Text, or Markdown)
 2. Choose start and end dates using the date pickers
-3. (Optional) Add or manage holidays:
-   - Click "Add Holiday" to add custom holidays
-   - Use "Reset to Default Holidays" to restore US holidays
-   - Delete individual holidays using the × button
+3. (Optional) Add or manage Flags:
+   - Click "Add Flag" to add custom Flags
+   - Use "Reset to Default Flags" to restore US Flags
+   - Delete individual Flags using the × button
 4. Click "Copy Calendars to Clipboard" to copy the generated calendar
 5. In your target application:
    - Open your desired page
@@ -67,7 +67,7 @@ The application is built with:
 - date-fns for reliable date manipulation
 - Webpack for module bundling
 - Modern CSS with flexbox layouts
-- LocalStorage for persistent holiday storage
+- LocalStorage for persistent Flag storage
 
 ## Building for Production
 

@@ -1,4 +1,4 @@
-import { format, eachDayOfInterval, startOfMonth, endOfMonth, getDay, parse, addMonths } from 'date-fns';
+import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, parse, addMonths } from 'date-fns';
 import config from './config.json';
 
 let currentConfig = { ...config };
@@ -14,17 +14,17 @@ function loadConfig() {
     if (savedConfig) {
         currentConfig = JSON.parse(savedConfig);
         
-        // Migrate old holiday format to new format
-        if (currentConfig.holidays) {
-            currentConfig.holidays = currentConfig.holidays.map(holiday => {
-                if (holiday.date && !holiday.startDate) {
+        // Migrate old Flag format to new format
+        if (currentConfig.Flags) {
+            currentConfig.Flags = currentConfig.Flags.map(Flag => {
+                if (Flag.date && !Flag.startDate) {
                     return {
-                        name: holiday.name,
-                        startDate: holiday.date,
-                        endDate: holiday.date
+                        name: Flag.name,
+                        startDate: Flag.date,
+                        endDate: Flag.date
                     };
                 }
-                return holiday;
+                return Flag;
             });
             // Save migrated config
             saveConfig();
@@ -48,132 +48,132 @@ function loadConfig() {
             });
         }
         
-        // Render holidays
-        renderHolidays();
+        // Render Flags
+        renderFlags();
     }
 }
 
-function renderHolidays() {
-    const holidayList = document.getElementById('holidayList');
-    if (!holidayList) return;
+function renderFlags() {
+    const FlagList = document.getElementById('FlagList');
+    if (!FlagList) return;
     
-    holidayList.innerHTML = '';
+    FlagList.innerHTML = '';
     
-    const holidays = loadHolidays();
-    if (!holidays || holidays.length === 0) {
+    const Flags = loadFlags();
+    if (!Flags || Flags.length === 0) {
         return;
     }
     
-    holidays.sort((a, b) => {
+    Flags.sort((a, b) => {
         const dateA = new Date(a.startDate);
         const dateB = new Date(b.startDate);
         return dateA - dateB;
-    }).forEach(holiday => {
-        const holidayItem = document.createElement('div');
-        holidayItem.className = 'holiday-item';
+    }).forEach(Flag => {
+        const FlagItem = document.createElement('div');
+        FlagItem.className = 'Flag-item';
         
-        const holidayInfo = document.createElement('div');
-        holidayInfo.className = 'holiday-info';
+        const FlagInfo = document.createElement('div');
+        FlagInfo.className = 'Flag-info';
         
         const nameSpan = document.createElement('div');
-        nameSpan.textContent = holiday.name;
-        nameSpan.className = 'holiday-name';
+        nameSpan.textContent = Flag.name;
+        nameSpan.className = 'Flag-name';
         
         const dateSpan = document.createElement('div');
-        dateSpan.className = 'holiday-date';
-        if (holiday.startDate === holiday.endDate) {
-            dateSpan.textContent = format(new Date(holiday.startDate), 'MMM d, yyyy');
+        dateSpan.className = 'Flag-date';
+        if (Flag.startDate === Flag.endDate) {
+            dateSpan.textContent = format(new Date(Flag.startDate), 'MMM d, yyyy');
         } else {
-            dateSpan.textContent = `${format(new Date(holiday.startDate), 'MMM d, yyyy')} - ${format(new Date(holiday.endDate), 'MMM d, yyyy')}`;
+            dateSpan.textContent = `${format(new Date(Flag.startDate), 'MMM d, yyyy')} - ${format(new Date(Flag.endDate), 'MMM d, yyyy')}`;
         }
         
         const deleteButton = document.createElement('button');
-        deleteButton.className = 'delete-holiday';
+        deleteButton.className = 'delete-Flag';
         deleteButton.textContent = '×';
         deleteButton.onclick = () => {
-            deleteHoliday(holiday.startDate, holiday.endDate);
+            deleteFlag(Flag.startDate, Flag.endDate);
         };
         
-        holidayInfo.appendChild(nameSpan);
-        holidayInfo.appendChild(dateSpan);
-        holidayItem.appendChild(holidayInfo);
-        holidayItem.appendChild(deleteButton);
-        holidayList.appendChild(holidayItem);
+        FlagInfo.appendChild(nameSpan);
+        FlagInfo.appendChild(dateSpan);
+        FlagItem.appendChild(FlagInfo);
+        FlagItem.appendChild(deleteButton);
+        FlagList.appendChild(FlagItem);
     });
 }
 
-function loadHolidays() {
-    const holidaysJson = localStorage.getItem('holidays');
-    return holidaysJson ? JSON.parse(holidaysJson) : [];
+function loadFlags() {
+    const FlagsJson = localStorage.getItem('Flags');
+    return FlagsJson ? JSON.parse(FlagsJson) : [];
 }
 
-function addHoliday(event) {
+function addFlag(event) {
     event.preventDefault();
     
-    const nameInput = document.getElementById('holidayName');
-    const startDateInput = document.getElementById('holidayStartDate');
-    const endDateInput = document.getElementById('holidayEndDate');
+    const nameInput = document.getElementById('FlagName');
+    const startDateInput = document.getElementById('FlagStartDate');
+    const endDateInput = document.getElementById('FlagEndDate');
     
     const name = nameInput.value.trim();
     const startDate = startDateInput.value;
     const endDate = endDateInput.value || startDate;
     
     if (!name || !startDate) {
-        alert('Please enter a holiday name and start date');
+        alert('Please enter a Flag name and start date');
         return;
     }
     
-    const holidays = loadHolidays();
-    const holiday = {
+    const Flags = loadFlags();
+    const Flag = {
         name,
         startDate,
         endDate
     };
     
-    holidays.push(holiday);
-    localStorage.setItem('holidays', JSON.stringify(holidays));
+    Flags.push(Flag);
+    localStorage.setItem('Flags', JSON.stringify(Flags));
     
     // Clear form
     nameInput.value = '';
     startDateInput.value = '';
     endDateInput.value = '';
     
-    renderHolidays();
+    renderFlags();
     generateCalendar();
 }
 
-function deleteHoliday(startDate, endDate) {
-    const holidays = loadHolidays();
-    const updatedHolidays = holidays.filter(h => 
+function deleteFlag(startDate, endDate) {
+    const Flags = loadFlags();
+    const updatedFlags = Flags.filter(h => 
         !(h.startDate === startDate && h.endDate === endDate)
     );
     
-    localStorage.setItem('holidays', JSON.stringify(updatedHolidays));
-    renderHolidays();
+    localStorage.setItem('Flags', JSON.stringify(updatedFlags));
+    renderFlags();
     generateCalendar();
 }
 
 function initializeEventListeners() {
-    // Add holiday form submission
-    const addHolidayButton = document.getElementById('addHoliday');
-    if (addHolidayButton) {
-        addHolidayButton.onclick = addHoliday;
+    // Add Flag form submission
+    const addFlagButton = document.getElementById('addFlag');
+    if (addFlagButton) {
+        addFlagButton.onclick = addFlag;
     }
     
-    // Reset holidays button
-    const resetButton = document.querySelector('.reset-holidays');
+    // Reset Flags button
+    const resetButton = document.querySelector('.reset-Flags');
     if (resetButton) {
         resetButton.onclick = () => {
             const currentYear = new Date().getFullYear();
-            const defaultHolidays = getDefaultUSHolidays(currentYear);
-            localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
-            renderHolidays();
+            const defaultFlags = getDefaultUSFlags(currentYear);
+            localStorage.setItem('Flags', JSON.stringify(defaultFlags));
+            renderFlags();
             generateCalendar();
         };
     }
 }
 
-function getDefaultUSHolidays(year) {
+function getDefaultUSFlags(year) {
     return [
         {
             name: "New Year's Day",
@@ -228,16 +228,190 @@ function getDefaultUSHolidays(year) {
     ];
 }
 
+// Add state management functions
+function saveElementState(elementId, state) {
+    const savedStates = JSON.parse(localStorage.getItem('elementStates') || '{}');
+    savedStates[elementId] = state;
+    localStorage.setItem('elementStates', JSON.stringify(savedStates));
+}
+
+function loadElementState(elementId) {
+    const savedStates = JSON.parse(localStorage.getItem('elementStates') || '{}');
+    return savedStates[elementId];
+}
+
+function saveState() {
+    // Save controls state
+    const controlsContainer = document.querySelector('.controls-container');
+    if (controlsContainer) {
+        saveElementState('controls', {
+            width: controlsContainer.style.width || '400px',
+            height: controlsContainer.style.height || 'auto',
+            left: controlsContainer.style.left || '20px',
+            top: controlsContainer.style.top || '80px'
+        });
+    }
+
+    // Save Flag manager state
+    const FlagManager = document.querySelector('.Flag-manager');
+    if (FlagManager) {
+        saveElementState('FlagManager', {
+            width: FlagManager.style.width || '400px',
+            height: FlagManager.style.height || 'auto',
+            left: FlagManager.style.left || '440px',
+            top: FlagManager.style.top || '80px'
+        });
+    }
+
+    // Save calendar preview state
+    const calendarPreview = document.getElementById('calendar-preview');
+    if (calendarPreview) {
+        saveElementState('calendarPreview', {
+            width: calendarPreview.style.width || '600px',
+            height: calendarPreview.style.height || '400px',
+            left: calendarPreview.style.left || '50%',
+            top: calendarPreview.style.top || '50%',
+            display: calendarPreview.style.display || 'none'
+        });
+    }
+
+    // Save dates and settings
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const dimWeekends = document.getElementById('dimWeekends');
+    
+    saveElementState('dateSettings', {
+        startDate: startDate ? startDate.value : '',
+        endDate: endDate ? endDate.value : '',
+        dimWeekends: dimWeekends ? dimWeekends.checked : false
+    });
+}
+
+function restoreState() {
+    // Restore controls state
+    const controlsState = loadElementState('controls');
+    const controlsContainer = document.querySelector('.controls-container');
+    if (controlsState && controlsContainer) {
+        Object.assign(controlsContainer.style, {
+            width: controlsState.width,
+            height: controlsState.height,
+            left: controlsState.left,
+            top: controlsState.top
+        });
+    }
+
+    // Restore Flag manager state
+    const FlagState = loadElementState('FlagManager');
+    const FlagManager = document.querySelector('.Flag-manager');
+    if (FlagState && FlagManager) {
+        Object.assign(FlagManager.style, {
+            width: FlagState.width,
+            height: FlagState.height,
+            left: FlagState.left,
+            top: FlagState.top
+        });
+    }
+
+    // Restore calendar preview state
+    const previewState = loadElementState('calendarPreview');
+    const calendarPreview = document.getElementById('calendar-preview');
+    if (previewState && calendarPreview) {
+        Object.assign(calendarPreview.style, {
+            width: previewState.width,
+            height: previewState.height,
+            left: previewState.left,
+            top: previewState.top,
+            display: previewState.display
+        });
+    }
+
+    // Restore dates and settings
+    const dateSettings = loadElementState('dateSettings');
+    if (dateSettings) {
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const dimWeekends = document.getElementById('dimWeekends');
+        
+        if (startDate) startDate.value = dateSettings.startDate;
+        if (endDate) endDate.value = dateSettings.endDate;
+        if (dimWeekends) dimWeekends.checked = dateSettings.dimWeekends;
+    }
+}
+
+// Initialize drag and drop functionality
+function initializeDragAndDrop() {
+    const draggableElements = document.querySelectorAll('.draggable');
+    
+    draggableElements.forEach(element => {
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        
+        // Set initial positions
+        const rect = element.getBoundingClientRect();
+        element.style.position = 'absolute';
+        element.style.left = rect.left + 'px';
+        element.style.top = rect.top + 'px';
+        
+        element.addEventListener('mousedown', e => {
+            // Ignore if clicking on input, button, or any interactive element
+            if (e.target.tagName.toLowerCase() === 'input' || 
+                e.target.tagName.toLowerCase() === 'button' ||
+                e.target.tagName.toLowerCase() === 'select' ||
+                e.target.tagName.toLowerCase() === 'textarea' ||
+                e.target.closest('.Flag-form') ||
+                e.target.closest('.format-controls')) {
+                return;
+            }
+
+            if (e.target === element || e.target.classList.contains('controls-header') || 
+                e.target.classList.contains('Flag-header') || e.target.classList.contains('preview-header')) {
+                isDragging = true;
+                initialX = e.clientX - element.offsetLeft;
+                initialY = e.clientY - element.offsetTop;
+                element.classList.add('dragging');
+            }
+        });
+        
+        document.addEventListener('mousemove', e => {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                
+                element.style.left = currentX + 'px';
+                element.style.top = currentY + 'px';
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                element.classList.remove('dragging');
+                saveState(); // Save state after dragging
+            }
+        });
+
+        // Add resize observer to track size changes
+        const resizeObserver = new ResizeObserver(() => {
+            saveState(); // Save state when element is resized
+        });
+        resizeObserver.observe(element);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize holidays if first time
-    if (!localStorage.getItem('holidays')) {
+    // Initialize Flags if first time
+    if (!localStorage.getItem('Flags')) {
         const currentYear = new Date().getFullYear();
-        const defaultHolidays = getDefaultUSHolidays(currentYear);
-        localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
+        const defaultFlags = getDefaultUSFlags(currentYear);
+        localStorage.setItem('Flags', JSON.stringify(defaultFlags));
     }
     
-    // Load and render holidays
-    renderHolidays();
+    // Load and render Flags
+    renderFlags();
     
     // Initialize drag and drop
     initializeDragAndDrop();
@@ -471,160 +645,108 @@ function validateDateRange(startDate, endDate) {
 }
 
 function generateCalendar() {
-    const startDateStr = document.getElementById('startDate').value;
-    const endDateStr = document.getElementById('endDate').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
     const dimWeekends = document.getElementById('dimWeekends').checked;
-    
-    // Only proceed if we have both dates
-    if (!startDateStr || !endDateStr) {
-        return;
-    }
-
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-
-    // Validate date range
-    if (!validateDateRange(startDate, endDate)) {
-        alert('Date range cannot exceed 16 months');
-        return;
-    }
-
-    // Set the time portions for accurate comparison
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
-
-    // Update preview title
-    updatePreviewTitle();
-
-    // Get the first and last months to display
-    const start = startOfMonth(startDate);
-    const end = endOfMonth(endDate);
-    
-    // Generate preview content (always Word format)
-    const previewContent = generateWordCalendar(start, end, startDate, endDate, dimWeekends);
-    
-    // Generate content in selected format for clipboard
-    const format = getCurrentFormat();
-    let clipboardContent;
-    switch (format) {
-        case 'word':
-            clipboardContent = previewContent;
-            break;
-        case 'html':
-            clipboardContent = generateHtmlCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-        case 'text':
-            clipboardContent = generateTextCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-        case 'markdown':
-            clipboardContent = generateMarkdownCalendar(start, end, startDate, endDate, dimWeekends);
-            break;
-    }
-    
-    // Update preview with Word format
     const preview = document.querySelector('.preview');
-    preview.innerHTML = previewContent;
     
-    // Calculate months difference for sizing
-    const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
-                     (endDate.getMonth() - startDate.getMonth()) + 1;
-    
-    // Make sure the preview is visible and positioned
-    const calendarPreview = document.getElementById('calendar-preview');
-    calendarPreview.style.display = 'block';
-    if (!calendarPreview.style.left && !calendarPreview.style.top) {
-        calendarPreview.style.left = '50%';
-        calendarPreview.style.top = '50%';
+    if (!startDate || !endDate) {
+        preview.innerHTML = '<p>Please select both start and end dates.</p>';
+        return;
     }
     
-    // Adjust preview height based on number of months
-    preview.style.height = `${Math.min(70, Math.max(monthDiff * 15, 30))}vh`;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     
-    // Copy selected format to clipboard
-    navigator.clipboard.writeText(clipboardContent);
+    // Validate date range
+    const monthDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    if (monthDiff > 16) {
+        preview.innerHTML = '<p>Date range cannot exceed 16 months.</p>';
+        return;
+    }
     
-    // Save state
-    saveLastState();
+    const formatType = document.querySelector('.format-option.selected').dataset.format;
+    let calendarHtml = '';
+    
+    // Generate title
+    const dateRange = formatType === 'html' ? 
+        `<h2 style="color: white; margin-bottom: 20px;">${format(start, 'MMM yyyy')} - ${format(end, 'MMM yyyy')}</h2>` : 
+        `${format(start, 'MMM yyyy')} - ${format(end, 'MMM yyyy')}\n\n`;
+    
+    calendarHtml += dateRange;
+    
+    // Generate calendar for each month in the range
+    let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
+    const lastDate = new Date(end.getFullYear(), end.getMonth() + 1, 0);
+    
+    while (currentDate <= lastDate) {
+        const monthCalendar = `<div class="calendar-month">${generateMonthCalendar(currentDate, formatType, start, end, dimWeekends)}</div>`;
+        calendarHtml += monthCalendar;
+        currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    
+    preview.innerHTML = calendarHtml;
 }
 
-// Initialize calendar preview when document is loaded
-document.addEventListener('DOMContentLoaded', initializeCalendarPreview);
+function generateMonthCalendar(month, formatType, projectStartDate, projectEndDate, dimWeekends) {
+    let calendarHtml = '';
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-function isWeekend(date) {
-    const day = getDay(date);
-    return day === 0 || day === 6;
-}
+    calendarHtml += '<table bgcolor="#2D2D2D" style="border-collapse: collapse;" cellspacing="0" cellpadding="0" border="1" width="100%">' +
+        '<thead>' +
+        '<tr><th colspan="7" align="left" bgcolor="#2D2D2D" style="color: white; padding: 8px;">' +
+        format(month, 'yyyy') + ' ' + format(month, 'MMMM') +
+        '</th></tr><tr bgcolor="#E8E8E8">';
 
-function getDayStyle(date, projectStartDate, projectEndDate, dimWeekends) {
-    // Reset time portions to compare just the dates
-    const compareDate = date.getTime();
-    const startDate = new Date(projectStartDate).setHours(0, 0, 0, 0);
-    const endDate = new Date(projectEndDate).setHours(23, 59, 59, 999);
-    
-    const isProjectDay = compareDate >= startDate && compareDate <= endDate;
-    const weekend = isWeekend(date);
-    const holiday = isHoliday(date);
-    
-    if (!isProjectDay) {
-        return { color: '#808080' }; // Gray for non-project days
-    }
-    
-    if (holiday) {
-        return { color: '#FFA500' }; // Orange for holidays
-    }
-    
-    if (dimWeekends && weekend) {
-        return { color: '#808080' }; // Gray for dimmed weekends
-    }
-    
-    return { color: '#E6E6E6' }; // Soft white for active days
-}
+    // Weekday headers
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
+        calendarHtml += '<th align="center" width="14%" style="color: #333333; padding: 4px;">' + day + '</th>';
+    });
 
-function isHoliday(date) {
-    const holidays = loadHolidays();
-    if (!holidays || holidays.length === 0) return false;
-    
-    return holidays.some(holiday => {
-        try {
-            const checkDate = new Date(date);
-            const holidayStart = new Date(holiday.startDate);
-            const holidayEnd = new Date(holiday.endDate || holiday.startDate);
-            
-            // Set time to midnight for comparison
-            checkDate.setHours(0, 0, 0, 0);
-            holidayStart.setHours(0, 0, 0, 0);
-            holidayEnd.setHours(0, 0, 0, 0);
-            
-            return checkDate >= holidayStart && checkDate <= holidayEnd;
-        } catch (e) {
-            console.error('Invalid date in holiday check:', holiday);
-            return false;
+    calendarHtml += '</tr></thead><tbody>';
+
+    let currentWeek = [];
+    const firstDayOfMonth = getDay(monthStart);
+
+    // Fill in empty cells for the first week
+    for (let i = 0; i < firstDayOfMonth; i++) {
+        currentWeek.push('');
+    }
+
+    days.forEach(day => {
+        currentWeek.push(day);
+        if (currentWeek.length === 7) {
+            calendarHtml += createHtmlWeekRow(currentWeek, projectStartDate, projectEndDate, dimWeekends);
+            currentWeek = [];
         }
     });
+
+    if (currentWeek.length > 0) {
+        while (currentWeek.length < 7) {
+            currentWeek.push('');
+        }
+        calendarHtml += createHtmlWeekRow(currentWeek, projectStartDate, projectEndDate, dimWeekends);
+    }
+
+    calendarHtml += '</tbody></table>';
+    return calendarHtml;
 }
 
-function getHolidayName(date) {
-    const holidays = loadHolidays();
-    if (!holidays || holidays.length === 0) return null;
-    
-    const holiday = holidays.find(holiday => {
-        try {
-            const checkDate = new Date(date);
-            const holidayStart = new Date(holiday.startDate);
-            const holidayEnd = new Date(holiday.endDate || holiday.startDate);
-            
-            // Set time to midnight for comparison
-            checkDate.setHours(0, 0, 0, 0);
-            holidayStart.setHours(0, 0, 0, 0);
-            holidayEnd.setHours(0, 0, 0, 0);
-            
-            return checkDate >= holidayStart && checkDate <= holidayEnd;
-        } catch (e) {
-            console.error('Invalid date in holiday name check:', holiday);
-            return false;
+function createHtmlWeekRow(week, projectStartDate, projectEndDate, dimWeekends) {
+    let row = '<tr>';
+    week.forEach(day => {
+        if (day === '') {
+            row += '<td align="center" style="color: white; padding: 4px;"></td>';
+        } else {
+            const isFlagDate = isFlag(day);
+            const isWeekendDay = isWeekend(day);
+            const color = isFlagDate ? '#FFA500' : (dimWeekends && isWeekendDay ? '#808080' : 'white');
+            row += '<td align="center" style="color: ' + color + '; padding: 4px;">' + format(day, 'd') + '</td>';
         }
     });
-    return holiday ? holiday.name : null;
+    return row + '</tr>';
 }
 
 function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimWeekends) {
@@ -644,7 +766,7 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
 
         // Weekday headers
         ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
-            calendarHtml += '<th align="center" width="14%" style="padding: 4px;">' + day + '</th>';
+            calendarHtml += '<th align="center" width="14%" style="color: #333333; padding: 4px;">' + day + '</th>';
         });
 
         calendarHtml += '</tr></thead><tbody>';
@@ -677,21 +799,6 @@ function generateHtmlCalendar(start, end, projectStartDate, projectEndDate, dimW
     }
     
     return calendarHtml;
-}
-
-function createHtmlWeekRow(week, projectStartDate, projectEndDate, dimWeekends) {
-    let row = '<tr>';
-    week.forEach(day => {
-        if (day === '') {
-            row += '<td align="center" style="color: white; padding: 4px;"></td>';
-        } else {
-            const isHolidayDate = isHoliday(day);
-            const isWeekendDay = isWeekend(day);
-            const color = isHolidayDate ? '#FFA500' : (dimWeekends && isWeekendDay ? '#808080' : 'white');
-            row += '<td align="center" style="color: ' + color + '; padding: 4px;">' + format(day, 'd') + '</td>';
-        }
-    });
-    return row + '</tr>';
 }
 
 function generateTextCalendar(start, end, projectStartDate, projectEndDate, dimWeekends) {
@@ -801,7 +908,7 @@ function generateWordCalendar(start, end, projectStartDate, projectEndDate, dimW
         const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
         calendarHtml += '<tr>';
         weekDays.forEach(day => {
-            calendarHtml += `<td data-render-src="header-cell" style="border: 1px solid #808080; padding: 5px; text-align: center; width: 14.28%; font-weight: bold; color: #2D2D2D; background-color: #E6E6E6;">${day}</td>`;
+            calendarHtml += `<td data-render-src="header-cell" style="border: 1px solid #808080; padding: 5px; text-align: center; width: 14.28%; font-weight: bold; color: #333333; background-color: #E6E6E6;">${day}</td>`;
         });
         calendarHtml += '</tr>';
 
@@ -851,55 +958,111 @@ function createWordWeekRow(week, projectStartDate, projectEndDate, dimWeekends) 
         
         row += `<td data-render-src="day-cell" style="${cellStyle}">${day ? format(day, 'd') : ''}</td>`;
     });
-    row += '</tr>';
-    return row;
+    return row + '</tr>';
 }
 
-async function initializeDragAndDrop() {
-    const draggables = document.querySelectorAll('.draggable');
-    let selectedElement = null;
-    let offsetX = 0;
-    let offsetY = 0;
+document.addEventListener('DOMContentLoaded', function() {
+    restoreState(); // Restore saved state
+    initializeDragAndDrop();
+    
+    // Add event listeners for date changes
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const dimWeekends = document.getElementById('dimWeekends');
+    
+    [startDate, endDate].forEach(input => {
+        input?.addEventListener('change', saveState);
+    });
+    
+    dimWeekends?.addEventListener('change', saveState);
+    
+    // Save state before page unload
+    window.addEventListener('beforeunload', saveState);
+    
+    // Initialize other functionality
+    if (!localStorage.getItem('Flags')) {
+        const currentYear = new Date().getFullYear();
+        const defaultFlags = getDefaultUSFlags(currentYear);
+        localStorage.setItem('Flags', JSON.stringify(defaultFlags));
+    }
+    
+    renderFlags();
+    generateCalendar();
+});
 
-    // Set initial positions
-    draggables.forEach(element => {
-        const rect = element.getBoundingClientRect();
-        element.style.position = 'absolute';
-        element.style.left = rect.left + 'px';
-        element.style.top = rect.top + 'px';
+function isWeekend(date) {
+    const day = getDay(date);
+    return day === 0 || day === 6;
+}
 
-        element.addEventListener('mousedown', function(e) {
-            // Ignore if clicking on input, button, or any interactive element
-            if (e.target.tagName.toLowerCase() === 'input' || 
-                e.target.tagName.toLowerCase() === 'button' ||
-                e.target.tagName.toLowerCase() === 'select' ||
-                e.target.tagName.toLowerCase() === 'textarea' ||
-                e.target.closest('.holiday-form') ||
-                e.target.closest('.format-controls')) {
-                return;
-            }
+function getDayStyle(date, projectStartDate, projectEndDate, dimWeekends) {
+    // Reset time portions to compare just the dates
+    const compareDate = date.getTime();
+    const startDate = new Date(projectStartDate).setHours(0, 0, 0, 0);
+    const endDate = new Date(projectEndDate).setHours(23, 59, 59, 999);
+    
+    const isProjectDay = compareDate >= startDate && compareDate <= endDate;
+    const weekend = isWeekend(date);
+    const Flag = isFlag(date);
+    
+    if (!isProjectDay) {
+        return { color: '#808080' }; // Gray for non-project days
+    }
+    
+    if (Flag) {
+        return { color: '#FFA500' }; // Orange for Flags
+    }
+    
+    if (dimWeekends && weekend) {
+        return { color: '#808080' }; // Gray for dimmed weekends
+    }
+    
+    return { color: '#E6E6E6' }; // Soft white for active days
+}
+
+function isFlag(date) {
+    const Flags = loadFlags();
+    if (!Flags || Flags.length === 0) return false;
+    
+    return Flags.some(Flag => {
+        try {
+            const checkDate = new Date(date);
+            const FlagStart = new Date(Flag.startDate);
+            const FlagEnd = new Date(Flag.endDate || Flag.startDate);
             
-            e.preventDefault();
-            selectedElement = element;
-            const rect = element.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-            element.classList.add('dragging');
-        });
-    });
-
-    document.addEventListener('mousemove', function(e) {
-        if (selectedElement) {
-            e.preventDefault();
-            selectedElement.style.left = (e.clientX - offsetX) + 'px';
-            selectedElement.style.top = (e.clientY - offsetY) + 'px';
+            // Set time to midnight for comparison
+            checkDate.setHours(0, 0, 0, 0);
+            FlagStart.setHours(0, 0, 0, 0);
+            FlagEnd.setHours(0, 0, 0, 0);
+            
+            return checkDate >= FlagStart && checkDate <= FlagEnd;
+        } catch (e) {
+            console.error('Invalid date in Flag check:', Flag);
+            return false;
         }
     });
+}
 
-    document.addEventListener('mouseup', function() {
-        if (selectedElement) {
-            selectedElement.classList.remove('dragging');
-            selectedElement = null;
+function getFlagName(date) {
+    const Flags = loadFlags();
+    if (!Flags || Flags.length === 0) return null;
+    
+    const Flag = Flags.find(Flag => {
+        try {
+            const checkDate = new Date(date);
+            const FlagStart = new Date(Flag.startDate);
+            const FlagEnd = new Date(Flag.endDate || Flag.startDate);
+            
+            // Set time to midnight for comparison
+            checkDate.setHours(0, 0, 0, 0);
+            FlagStart.setHours(0, 0, 0, 0);
+            FlagEnd.setHours(0, 0, 0, 0);
+            
+            return checkDate >= FlagStart && checkDate <= FlagEnd;
+        } catch (e) {
+            console.error('Invalid date in Flag name check:', Flag);
+            return false;
         }
     });
+    return Flag ? Flag.name : null;
 }

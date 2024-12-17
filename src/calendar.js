@@ -268,7 +268,6 @@ function saveState() {
     if (calendarPreview) {
         saveElementState('calendarPreview', {
             width: calendarPreview.style.width || '600px',
-            height: calendarPreview.style.height || '400px',
             left: calendarPreview.style.left || '50%',
             top: calendarPreview.style.top || '50%',
             display: calendarPreview.style.display || 'none'
@@ -422,9 +421,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add click event listeners to format options
     document.querySelectorAll('.format-option').forEach(option => {
         option.addEventListener('click', function() {
-            // Update selected state
-            document.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
-            this.classList.add('selected');
+            const calendarPreview = document.getElementById('calendar-preview');
+            const isPreviewVisible = calendarPreview.style.display === 'block';
+            const isSameFormat = this.classList.contains('last-clicked');
+
+            // Remove selected class from all options
+            document.querySelectorAll('.format-option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.classList.remove('last-clicked');
+            });
+
+            // If clicking the same format while preview is visible, hide it
+            if (isPreviewVisible && isSameFormat) {
+                calendarPreview.style.display = 'none';
+                return;
+            }
 
             // Get current calendar content in the new format
             const startDateStr = document.getElementById('startDate').value;
@@ -460,17 +471,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Copy to clipboard
                 navigator.clipboard.writeText(clipboardContent);
                 
-                // Show calendar preview if hidden
-                const calendarPreview = document.getElementById('calendar-preview');
-                if (calendarPreview.style.display === 'none') {
-                    calendarPreview.style.display = 'block';
-                    if (previewPosition.left && previewPosition.top) {
-                        calendarPreview.style.left = previewPosition.left;
-                        calendarPreview.style.top = previewPosition.top;
-                    }
+                // Update preview and button state
+                this.classList.add('selected');
+                this.classList.add('last-clicked');
+                
+                if (!isPreviewVisible) {
+                    showCalendarPreview();
                 }
+                generateCalendar();
             }
             
+            // Save state
             saveLastState();
         });
     });
@@ -633,8 +644,28 @@ function showCalendarPreview() {
     const calendarPreview = document.getElementById('calendar-preview');
     if (calendarPreview.style.display === 'none') {
         calendarPreview.style.display = 'block';
-        calendarPreview.style.left = previewPosition.left;
-        calendarPreview.style.top = previewPosition.top;
+        
+        // If there's a stored position from dragging, use that
+        if (previewPosition.left !== '50%' || previewPosition.top !== '50%') {
+            calendarPreview.style.left = previewPosition.left;
+            calendarPreview.style.top = previewPosition.top;
+        } else {
+            // Center the preview in the viewport
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const previewWidth = calendarPreview.offsetWidth;
+            const previewHeight = calendarPreview.offsetHeight;
+            
+            const left = Math.max(0, (viewportWidth - previewWidth) / 2);
+            const top = Math.max(0, (viewportHeight - previewHeight) / 2);
+            
+            calendarPreview.style.left = `${left}px`;
+            calendarPreview.style.top = `${top}px`;
+            
+            // Update stored position
+            previewPosition.left = calendarPreview.style.left;
+            previewPosition.top = calendarPreview.style.top;
+        }
     }
 }
 

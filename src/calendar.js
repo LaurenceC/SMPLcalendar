@@ -9,7 +9,6 @@ function saveConfig() {
     localStorage.setItem('calendarConfig', JSON.stringify(currentConfig));
 }
 
-
 function renderFlags() {
     const FlagList = document.getElementById('FlagList');
     if (!FlagList) return;
@@ -645,9 +644,324 @@ function getCurrentFormat() {
     return document.querySelector('.format-option.selected').dataset.format;
 }
 
+// Add fade timeout functionality
+let fadeTimeoutId = null;
+let container = null;
+let orangeClock = null;
+let startTime = Date.now();
+let baseTime = new Date('2024-12-17T22:42:49-05:00'); // Using the provided time as base
+let clockInterval = null;
 
-// Store calendar preview position
-let previewPosition = { left: '50%', top: '50%' };
+function updateClock() {
+    if (!orangeClock) return;
+    
+    // Calculate elapsed time since start
+    const elapsedMs = Date.now() - startTime;
+    const now = new Date(baseTime.getTime() + elapsedMs);
+    
+    // Update date
+    const dateElement = orangeClock.querySelector('.date');
+    if (dateElement) {
+        dateElement.textContent = format(now, 'MMMM d, yyyy');
+    }
+    
+    // Update time
+    const timeContainer = orangeClock.querySelector('.time');
+    if (!timeContainer) return;
+
+    const timeStr = format(now, 'HH:mm:ss');
+    const parts = timeStr.split(':');
+    
+    // Get existing digits or create new container
+    const existingDigits = timeContainer.querySelectorAll('.digit');
+    if (existingDigits.length === 0) {
+        // First time - create all elements
+        timeContainer.innerHTML = '';
+        
+        // Add hours
+        parts[0].split('').forEach(digit => {
+            const digitSpan = document.createElement('span');
+            digitSpan.className = 'digit';
+            digitSpan.textContent = digit;
+            timeContainer.appendChild(digitSpan);
+        });
+        
+        // Add first separator
+        const sep1 = document.createElement('span');
+        sep1.className = 'separator';
+        sep1.textContent = ':';
+        timeContainer.appendChild(sep1);
+        
+        // Add minutes
+        parts[1].split('').forEach(digit => {
+            const digitSpan = document.createElement('span');
+            digitSpan.className = 'digit';
+            digitSpan.textContent = digit;
+            timeContainer.appendChild(digitSpan);
+        });
+        
+        // Add second separator
+        const sep2 = document.createElement('span');
+        sep2.className = 'separator';
+        sep2.textContent = ':';
+        timeContainer.appendChild(sep2);
+        
+        // Add seconds
+        parts[2].split('').forEach(digit => {
+            const digitSpan = document.createElement('span');
+            digitSpan.className = 'digit';
+            digitSpan.textContent = digit;
+            timeContainer.appendChild(digitSpan);
+        });
+    } else {
+        // Update existing digits with animation
+        const newDigits = [...parts[0], ...parts[1], ...parts[2]];
+        existingDigits.forEach((digitElement, index) => {
+            const newValue = newDigits[index];
+            if (digitElement.textContent !== newValue) {
+                // Fade out
+                digitElement.classList.add('fade-out');
+                
+                // Update value and fade in after short delay
+                setTimeout(() => {
+                    digitElement.textContent = newValue;
+                    digitElement.classList.remove('fade-out');
+                    digitElement.classList.add('fade-in');
+                    
+                    // Remove fade-in class after animation
+                    setTimeout(() => {
+                        digitElement.classList.remove('fade-in');
+                    }, 300);
+                }, 150);
+            }
+        });
+    }
+}
+
+function startClock() {
+    if (!orangeClock) {
+        orangeClock = document.querySelector('.orange-clock');
+    }
+    
+    // Initial update without showing the clock
+    updateClock();
+    
+    // Show the clock after a short delay
+    setTimeout(() => {
+        orangeClock.classList.add('visible');
+    }, 500);
+    
+    // Start the clock interval
+    clockInterval = setInterval(updateClock, 1000);
+}
+
+function stopClock() {
+    if (clockInterval) {
+        clearInterval(clockInterval);
+        clockInterval = null;
+    }
+    if (orangeClock) {
+        orangeClock.classList.remove('visible');
+    }
+}
+
+function clearFadeTimeout() {
+    if (fadeTimeoutId) {
+        clearTimeout(fadeTimeoutId);
+        fadeTimeoutId = null;
+    }
+}
+
+function resetFadeTimeout() {
+    clearFadeTimeout();
+    
+    if (container) {
+        container.classList.remove('fade-out');
+        container.classList.add('fade-in');
+    }
+    
+    if (orangeClock) {
+        orangeClock.classList.remove('visible');
+    }
+    
+    fadeTimeoutId = setTimeout(() => {
+        if (container) {
+            container.classList.remove('fade-in');
+            container.classList.add('fade-out');
+        }
+        if (orangeClock) {
+            orangeClock.classList.add('visible');
+            updateClock(); // Ensure clock is updated when shown
+        }
+    }, 5000); // 5 seconds of inactivity
+}
+
+function initializeFadeTimeout() {
+    container = document.querySelector('.container');
+    orangeClock = document.querySelector('.orange-clock');
+    
+    if (orangeClock) {
+        startClock();
+        updateClock(); // Initial update
+    }
+    
+    // Reset fade timeout on any mouse movement or keyboard activity
+    document.addEventListener('mousemove', resetFadeTimeout);
+    document.addEventListener('click', resetFadeTimeout);
+    document.addEventListener('keydown', resetFadeTimeout);
+    
+    // Initial fade timeout
+    resetFadeTimeout();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    restoreState(); // Restore saved state
+    initializeDragAndDrop();
+    initializeEventListeners();
+    initializeFadeTimeout(); // Initialize fade timeout functionality
+    initializeContextMenu(); // Initialize context menu functionality
+    // Ensure a default format is selected
+    if (!document.querySelector('.format-option.selected')) {
+        const htmlFormat = document.querySelector('.format-option[data-format="html"]');
+        if (htmlFormat) {
+            htmlFormat.classList.add('selected');
+        }
+    }
+    
+    // Initialize calendar preview
+    initializeCalendarPreview();
+    
+    // Add event listeners for date changes
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const dimWeekends = document.getElementById('dimWeekends');
+    
+    [startDate, endDate].forEach(input => {
+        input?.addEventListener('change', saveState);
+    });
+    
+    dimWeekends?.addEventListener('change', saveState);
+    
+    // Save state before page unload
+    window.addEventListener('beforeunload', saveState);
+    
+    // Initialize other functionality
+    if (!localStorage.getItem('Flags')) {
+        const currentYear = new Date().getFullYear();
+        const defaultFlags = getDefaultUSFlags(currentYear);
+        localStorage.setItem('Flags', JSON.stringify(defaultFlags));
+    }
+    
+    renderFlags();
+    generateCalendar();
+});
+
+function isWeekend(date) {
+    const day = getDay(date);
+    return day === 0 || day === 6;
+}
+
+function getDayStyle(date, projectStartDate, projectEndDate, dimWeekends) {
+    // Reset time portions to compare just the dates
+    const compareDate = date.getTime();
+    const startDate = new Date(projectStartDate).setHours(0, 0, 0, 0);
+    const endDate = new Date(projectEndDate).setHours(23, 59, 59, 999);
+    
+    const isProjectDay = compareDate >= startDate && compareDate <= endDate;
+    const weekend = isWeekend(date);
+    const Flag = isFlag(date);
+    
+    if (!isProjectDay) {
+        return { color: '#808080' }; // Gray for non-project days
+    }
+    
+    if (Flag) {
+        return { color: '#FFA500' }; // Orange for Flags
+    }
+    
+    if (dimWeekends && weekend) {
+        return { color: '#808080' }; // Gray for dimmed weekends
+    }
+    
+    return { color: '#E6E6E6' }; // Soft white for active days
+}
+
+function isFlag(date) {
+    const Flags = loadFlags();
+    if (!Flags || Flags.length === 0) return false;
+    
+    return Flags.some(Flag => {
+        try {
+            const checkDate = new Date(date);
+            const FlagStart = new Date(Flag.startDate);
+            const FlagEnd = new Date(Flag.endDate || Flag.startDate);
+            
+            // Set time to midnight for comparison
+            checkDate.setHours(0, 0, 0, 0);
+            FlagStart.setHours(0, 0, 0, 0);
+            FlagEnd.setHours(0, 0, 0, 0);
+            
+            return checkDate >= FlagStart && checkDate <= FlagEnd;
+        } catch (e) {
+            console.error('Invalid date in Flag check:', Flag);
+            return false;
+        }
+    });
+}
+
+// Context menu functionality
+function showContextMenu(e) {
+    e.preventDefault();
+    
+    const contextMenu = document.getElementById('contextMenu');
+    if (!contextMenu) return;
+    
+    // Position the menu at click coordinates
+    contextMenu.style.left = `${e.clientX}px`;
+    contextMenu.style.top = `${e.clientY}px`;
+    
+    // Show the menu
+    contextMenu.classList.add('show');
+    
+    // Ensure menu stays within viewport
+    const rect = contextMenu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        contextMenu.style.left = `${e.clientX - rect.width}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+        contextMenu.style.top = `${e.clientY - rect.height}px`;
+    }
+}
+
+function hideContextMenu() {
+    const contextMenu = document.getElementById('contextMenu');
+    if (contextMenu) {
+        contextMenu.classList.remove('show');
+    }
+}
+
+function initializeContextMenu() {
+    // Add right-click event listener to show context menu
+    document.addEventListener('contextmenu', showContextMenu);
+    
+    // Hide context menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const contextMenu = document.getElementById('contextMenu');
+        const fadeTimeout = document.getElementById('fadeTimeout');
+        
+        // Don't hide if clicking inside the menu or the timeout input
+        if (contextMenu && fadeTimeout && 
+            (contextMenu.contains(e.target) || fadeTimeout.contains(e.target))) {
+            return;
+        }
+        
+        hideContextMenu();
+    });
+    
+    // Hide context menu when scrolling or resizing window
+    document.addEventListener('scroll', hideContextMenu);
+    window.addEventListener('resize', hideContextMenu);
+}
 
 function initializeCalendarPreview() {
     const hidePreviewBtn = document.querySelector('.hide-preview');
@@ -1054,7 +1368,8 @@ document.addEventListener('DOMContentLoaded', function() {
     restoreState(); // Restore saved state
     initializeDragAndDrop();
     initializeEventListeners();
-    
+    initializeFadeTimeout(); // Initialize fade timeout functionality
+    initializeContextMenu(); // Initialize context menu functionality
     // Ensure a default format is selected
     if (!document.querySelector('.format-option.selected')) {
         const htmlFormat = document.querySelector('.format-option[data-format="html"]');
@@ -1090,56 +1405,3 @@ document.addEventListener('DOMContentLoaded', function() {
     renderFlags();
     generateCalendar();
 });
-
-function isWeekend(date) {
-    const day = getDay(date);
-    return day === 0 || day === 6;
-}
-
-function getDayStyle(date, projectStartDate, projectEndDate, dimWeekends) {
-    // Reset time portions to compare just the dates
-    const compareDate = date.getTime();
-    const startDate = new Date(projectStartDate).setHours(0, 0, 0, 0);
-    const endDate = new Date(projectEndDate).setHours(23, 59, 59, 999);
-    
-    const isProjectDay = compareDate >= startDate && compareDate <= endDate;
-    const weekend = isWeekend(date);
-    const Flag = isFlag(date);
-    
-    if (!isProjectDay) {
-        return { color: '#808080' }; // Gray for non-project days
-    }
-    
-    if (Flag) {
-        return { color: '#FFA500' }; // Orange for Flags
-    }
-    
-    if (dimWeekends && weekend) {
-        return { color: '#808080' }; // Gray for dimmed weekends
-    }
-    
-    return { color: '#E6E6E6' }; // Soft white for active days
-}
-
-function isFlag(date) {
-    const Flags = loadFlags();
-    if (!Flags || Flags.length === 0) return false;
-    
-    return Flags.some(Flag => {
-        try {
-            const checkDate = new Date(date);
-            const FlagStart = new Date(Flag.startDate);
-            const FlagEnd = new Date(Flag.endDate || Flag.startDate);
-            
-            // Set time to midnight for comparison
-            checkDate.setHours(0, 0, 0, 0);
-            FlagStart.setHours(0, 0, 0, 0);
-            FlagEnd.setHours(0, 0, 0, 0);
-            
-            return checkDate >= FlagStart && checkDate <= FlagEnd;
-        } catch (e) {
-            console.error('Invalid date in Flag check:', Flag);
-            return false;
-        }
-    });
-}

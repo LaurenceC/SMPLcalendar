@@ -9,49 +9,6 @@ function saveConfig() {
     localStorage.setItem('calendarConfig', JSON.stringify(currentConfig));
 }
 
-function loadConfig() {
-    const savedConfig = localStorage.getItem('calendarConfig');
-    if (savedConfig) {
-        currentConfig = JSON.parse(savedConfig);
-        
-        // Migrate old Flag format to new format
-        if (currentConfig.Flags) {
-            currentConfig.Flags = currentConfig.Flags.map(Flag => {
-                if (Flag.date && !Flag.startDate) {
-                    return {
-                        name: Flag.name,
-                        startDate: Flag.date,
-                        endDate: Flag.date
-                    };
-                }
-                return Flag;
-            });
-            // Save migrated config
-            saveConfig();
-        }
-        
-        // Restore last state
-        if (currentConfig.lastState) {
-            const { startDate, endDate, dimWeekends, selectedFormat } = currentConfig.lastState;
-            if (startDate) document.getElementById('startDate').value = startDate;
-            if (endDate) document.getElementById('endDate').value = endDate;
-            document.getElementById('dimWeekends').checked = dimWeekends;
-            
-            // Set format
-            const formatOptions = document.querySelectorAll('.format-option');
-            formatOptions.forEach(option => {
-                if (option.dataset.format === selectedFormat) {
-                    option.classList.add('selected');
-                } else {
-                    option.classList.remove('selected');
-                }
-            });
-        }
-        
-        // Render Flags
-        renderFlags();
-    }
-}
 
 function renderFlags() {
     const FlagList = document.getElementById('FlagList');
@@ -170,6 +127,140 @@ function initializeEventListeners() {
             renderFlags();
             generateCalendar();
         };
+    }
+    
+    document.getElementById('startDate').addEventListener('change', generateCalendar);
+    document.getElementById('endDate').addEventListener('change', generateCalendar);
+    document.getElementById('dimWeekends').addEventListener('change', generateCalendar);
+
+    // Add icon click handlers
+    document.querySelector('.calendar-icon').addEventListener('click', () => {
+        const preview = document.getElementById('calendar-preview');
+        if (preview) {
+            preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
+            saveState();
+        }
+    });
+
+    document.querySelector('.flag-icon').addEventListener('click', () => {
+        const flagManager = document.querySelector('.Flag-manager');
+        if (flagManager) {
+            flagManager.style.display = flagManager.style.display === 'none' ? 'block' : 'none';
+            saveState();
+        }
+    });
+
+    // Format options event listeners
+    document.querySelectorAll('.format-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const calendarPreview = document.getElementById('calendar-preview');
+            const isPreviewVisible = calendarPreview.style.display === 'block';
+            const isSameFormat = this.classList.contains('last-clicked');
+
+            // Remove selected class from all options
+            document.querySelectorAll('.format-option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.classList.remove('last-clicked');
+            });
+
+            // If clicking the same format while preview is visible, hide it
+            if (isPreviewVisible && isSameFormat) {
+                calendarPreview.style.display = 'none';
+                return;
+            }
+
+            // Get current calendar content in the new format
+            const startDateStr = document.getElementById('startDate').value;
+            const endDateStr = document.getElementById('endDate').value;
+            
+            if (startDateStr && endDateStr) {
+                const startDate = new Date(startDateStr);
+                const endDate = new Date(endDateStr);
+                const dimWeekends = document.getElementById('dimWeekends').checked;
+                
+                // Get the first and last months to display
+                const start = startOfMonth(startDate);
+                const end = endOfMonth(endDate);
+                
+                // Generate content in selected format for clipboard
+                const format = this.dataset.format;
+                let clipboardContent;
+                switch (format) {
+                    case 'word':
+                        clipboardContent = generateWordCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                    case 'html':
+                        clipboardContent = generateHtmlCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                    case 'text':
+                        clipboardContent = generateTextCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                    case 'markdown':
+                        clipboardContent = generateMarkdownCalendar(start, end, startDate, endDate, dimWeekends);
+                        break;
+                }
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(clipboardContent);
+                
+                // Update preview and button state
+                this.classList.add('selected');
+                this.classList.add('last-clicked');
+                
+                if (!isPreviewVisible) {
+                    showCalendarPreview();
+                }
+                generateCalendar();
+            }
+            
+            // Save state
+            saveLastState();
+        });
+    });
+
+    // Add change handler for dim weekends
+    const dimWeekendsCheckbox = document.getElementById('dimWeekends');
+    if (dimWeekendsCheckbox) {
+        dimWeekendsCheckbox.addEventListener('change', () => {
+            generateCalendar();
+            saveLastState();
+        });
+    }
+
+    // Add change handlers for date inputs
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    if (startDateInput) {
+        startDateInput.addEventListener('change', function() {
+            const startDate = new Date(this.value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            
+            if (this.value && document.getElementById('endDate').value) {
+                if (!validateDateRange(startDate, endDate)) {
+                    alert('Date range cannot exceed 16 months');
+                    this.value = ''; // Clear invalid date
+                    return;
+                }
+                generateCalendar();
+            }
+        });
+    }
+    
+    if (endDateInput) {
+        endDateInput.addEventListener('change', function() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(this.value);
+            
+            if (this.value && document.getElementById('startDate').value) {
+                if (!validateDateRange(startDate, endDate)) {
+                    alert('Date range cannot exceed 16 months');
+                    this.value = ''; // Clear invalid date
+                    return;
+                }
+                generateCalendar();
+            }
+        });
     }
 }
 
@@ -549,43 +640,6 @@ function getCurrentFormat() {
     return document.querySelector('.format-option.selected').dataset.format;
 }
 
-function updatePreviewTitle() {
-    const startDateStr = document.getElementById('startDate').value;
-    const endDateStr = document.getElementById('endDate').value;
-    const previewTitle = document.querySelector('.preview-title');
-    
-    if (!startDateStr || !endDateStr || !previewTitle) {
-        previewTitle.textContent = 'Calendar Preview';
-        return;
-    }
-    
-    try {
-        const startDate = new Date(startDateStr);
-        const endDate = new Date(endDateStr);
-        
-        // Validate dates
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            previewTitle.textContent = 'Calendar Preview';
-            return;
-        }
-        
-        if (startDate.getFullYear() === endDate.getFullYear()) {
-            if (startDate.getMonth() === endDate.getMonth()) {
-                // Same month and year
-                previewTitle.textContent = format(startDate, 'MMMM yyyy');
-            } else {
-                // Same year, different months
-                previewTitle.textContent = `${format(startDate, 'MMM')} - ${format(endDate, 'MMM yyyy')}`;
-            }
-        } else {
-            // Different years
-            previewTitle.textContent = `${format(startDate, 'MMM yyyy')} - ${format(endDate, 'MMM yyyy')}`;
-        }
-    } catch (error) {
-        console.error('Error updating preview title:', error);
-        previewTitle.textContent = 'Calendar Preview';
-    }
-}
 
 // Store calendar preview position
 let previewPosition = { left: '50%', top: '50%' };
@@ -676,42 +730,41 @@ function validateDateRange(startDate, endDate) {
 }
 
 function generateCalendar() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    const startDateStr = document.getElementById('startDate').value;
+    const endDateStr = document.getElementById('endDate').value;
     const dimWeekends = document.getElementById('dimWeekends').checked;
     const preview = document.querySelector('.preview');
     
-    if (!startDate || !endDate) {
+    if (!startDateStr || !endDateStr) {
         preview.innerHTML = '<p>Please select both start and end dates.</p>';
         return;
     }
     
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
     
     // Validate date range
-    const monthDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
     if (monthDiff > 16) {
         preview.innerHTML = '<p>Date range cannot exceed 16 months.</p>';
         return;
     }
     
-    const formatType = document.querySelector('.format-option.selected').dataset.format;
+    const selectedFormat = document.querySelector('.format-option.selected');
+    const formatType = selectedFormat ? selectedFormat.dataset.format : 'html'; // Default to HTML if no format selected
     let calendarHtml = '';
     
     // Generate title
-    const dateRange = formatType === 'html' ? 
-        `<h2 style="color: white; margin-bottom: 20px;">${format(start, 'MMM yyyy')} - ${format(end, 'MMM yyyy')}</h2>` : 
-        `${format(start, 'MMM yyyy')} - ${format(end, 'MMM yyyy')}\n\n`;
-    
+    const dateRange = `<h2 style="color: white; margin-bottom: 20px;">${format(startDate, 'MMM yyyy')} - ${format(endDate, 'MMM yyyy')}</h2>`
+
     calendarHtml += dateRange;
     
     // Generate calendar for each month in the range
-    let currentDate = new Date(start.getFullYear(), start.getMonth(), 1);
-    const lastDate = new Date(end.getFullYear(), end.getMonth() + 1, 0);
+    let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const lastDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
     
     while (currentDate <= lastDate) {
-        const monthCalendar = `<div class="calendar-month">${generateMonthCalendar(currentDate, formatType, start, end, dimWeekends)}</div>`;
+        const monthCalendar = `<div class="calendar-month">${generateMonthCalendar(currentDate, formatType, startDate, endDate, dimWeekends)}</div>`;
         calendarHtml += monthCalendar;
         currentDate.setMonth(currentDate.getMonth() + 1);
     }
@@ -995,6 +1048,18 @@ function createWordWeekRow(week, projectStartDate, projectEndDate, dimWeekends) 
 document.addEventListener('DOMContentLoaded', function() {
     restoreState(); // Restore saved state
     initializeDragAndDrop();
+    initializeEventListeners();
+    
+    // Ensure a default format is selected
+    if (!document.querySelector('.format-option.selected')) {
+        const htmlFormat = document.querySelector('.format-option[data-format="html"]');
+        if (htmlFormat) {
+            htmlFormat.classList.add('selected');
+        }
+    }
+    
+    // Initialize calendar preview
+    initializeCalendarPreview();
     
     // Add event listeners for date changes
     const startDate = document.getElementById('startDate');
@@ -1074,26 +1139,4 @@ function isFlag(date) {
     });
 }
 
-function getFlagName(date) {
-    const Flags = loadFlags();
-    if (!Flags || Flags.length === 0) return null;
-    
-    const Flag = Flags.find(Flag => {
-        try {
-            const checkDate = new Date(date);
-            const FlagStart = new Date(Flag.startDate);
-            const FlagEnd = new Date(Flag.endDate || Flag.startDate);
-            
-            // Set time to midnight for comparison
-            checkDate.setHours(0, 0, 0, 0);
-            FlagStart.setHours(0, 0, 0, 0);
-            FlagEnd.setHours(0, 0, 0, 0);
-            
-            return checkDate >= FlagStart && checkDate <= FlagEnd;
-        } catch (e) {
-            console.error('Invalid date in Flag name check:', Flag);
-            return false;
-        }
-    });
-    return Flag ? Flag.name : null;
-}
+

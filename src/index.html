@@ -162,6 +162,30 @@
             opacity: 1;
         }
 
+        .icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+
+        .toggle-flag-manager {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+            background: #3D3D3D;
+            cursor: pointer;
+        }
+
+        .toggle-flag-manager:hover {
+            background: #4D4D4D;
+        }
+
+        .toggle-flag-manager svg {
+            color: #E6E6E6;
+        }
+
         /* Input styles */
         input[type="text"],
         input[type="date"] {
@@ -266,8 +290,12 @@
                 <div class="controls-header">
                     <h3 class="controls-title">Calendar Controls</h3>
                     <div class="controls-icons">
-                        <span class="icon calendar-icon" title="Toggle Calendar Preview">📅</span>
-                        <span class="icon flag-icon" title="Toggle Flag Manager">🚩</span>
+                        <div class="icon toggle-flag-manager" title="Toggle Flag Manager">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                <line x1="4" y1="22" x2="4" y2="15"></line>
+                            </svg>
+                        </div>
                     </div>
                 </div>
                 <div class="controls-content">

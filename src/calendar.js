@@ -133,23 +133,6 @@ function initializeEventListeners() {
     document.getElementById('endDate').addEventListener('change', generateCalendar);
     document.getElementById('dimWeekends').addEventListener('change', generateCalendar);
 
-    // Add icon click handlers
-    document.querySelector('.calendar-icon').addEventListener('click', () => {
-        const preview = document.getElementById('calendar-preview');
-        if (preview) {
-            preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
-            saveState();
-        }
-    });
-
-    document.querySelector('.flag-icon').addEventListener('click', () => {
-        const flagManager = document.querySelector('.Flag-manager');
-        if (flagManager) {
-            flagManager.style.display = flagManager.style.display === 'none' ? 'block' : 'none';
-            saveState();
-        }
-    });
-
     // Format options event listeners
     document.querySelectorAll('.format-option').forEach(option => {
         option.addEventListener('click', function() {
@@ -262,6 +245,12 @@ function initializeEventListeners() {
             }
         });
     }
+    
+    // Add Flag Manager toggle
+    const toggleFlagManagerBtn = document.querySelector('.toggle-flag-manager');
+    if (toggleFlagManagerBtn) {
+        toggleFlagManagerBtn.addEventListener('click', toggleFlagManager);
+    }
 }
 
 function getDefaultUSFlags(year) {
@@ -350,7 +339,8 @@ function saveState() {
             width: FlagManager.style.width || '400px',
             height: FlagManager.style.height || 'auto',
             left: FlagManager.style.left || '440px',
-            top: FlagManager.style.top || '80px'
+            top: FlagManager.style.top || '80px',
+            display: FlagManager.style.display || 'block'
         });
     }
 
@@ -398,7 +388,8 @@ function restoreState() {
             width: FlagState.width,
             height: FlagState.height,
             left: FlagState.left,
-            top: FlagState.top
+            top: FlagState.top,
+            display: FlagState.display
         });
     }
 
@@ -490,6 +481,20 @@ function initializeDragAndDrop() {
         });
         resizeObserver.observe(element);
     });
+}
+
+function toggleFlagManager() {
+    const flagManager = document.querySelector('.Flag-manager');
+    if (flagManager) {
+        const isVisible = flagManager.style.display !== 'none';
+        flagManager.style.display = isVisible ? 'none' : 'block';
+        
+        // Save state
+        saveElementState('FlagManager', {
+            ...loadElementState('FlagManager'),
+            display: flagManager.style.display
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1138,5 +1143,3 @@ function isFlag(date) {
         }
     });
 }
-
-

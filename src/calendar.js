@@ -517,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.format-option').forEach(option => {
         option.addEventListener('click', function() {
             const calendarPreview = document.getElementById('calendar-preview');
-            const isPreviewVisible = calendarPreview.style.display === 'block';
+            const isPreviewVisible = calendarPreview.style.display === 'none';
             const isSameFormat = this.classList.contains('last-clicked');
 
             // Remove selected class from all options
@@ -648,16 +648,13 @@ function getCurrentFormat() {
 let fadeTimeoutId = null;
 let container = null;
 let orangeClock = null;
-let startTime = Date.now();
-let baseTime = new Date('2024-12-17T22:42:49-05:00'); // Using the provided time as base
 let clockInterval = null;
+let previewPosition = { left: '50%', top: '50%' };
 
 function updateClock() {
     if (!orangeClock) return;
     
-    // Calculate elapsed time since start
-    const elapsedMs = Date.now() - startTime;
-    const now = new Date(baseTime.getTime() + elapsedMs);
+    const now = new Date();
     
     // Update date
     const dateElement = orangeClock.querySelector('.date');

@@ -60,6 +60,35 @@ http://localhost:3000
    - Place your cursor where you want the calendar
    - Paste (Cmd+V on Mac, Ctrl+V on Windows)
 
+## Testing
+
+The application includes a comprehensive test suite built with Jest. The tests cover core functionality including:
+
+- Date utility functions
+- Flag management
+- Calendar styling
+- User interactions
+
+To run the tests:
+
+```bash
+# Run tests once
+npm test
+
+# Run tests in watch mode (useful during development)
+npm run test:watch
+```
+
+Test files are located in the `tests` directory. Each test file corresponds to its source file in the `src` directory.
+
+### Test Coverage
+
+The test suite includes:
+- Unit tests for date manipulation functions
+- Integration tests for Flag management
+- UI component tests with DOM manipulation
+- LocalStorage mocking for data persistence tests
+
 ## Development
 
 The application is built with:
@@ -68,6 +97,7 @@ The application is built with:
 - Webpack for module bundling
 - Modern CSS with flexbox layouts
 - LocalStorage for persistent Flag storage
+- Jest for testing
 
 ## Building for Production
 

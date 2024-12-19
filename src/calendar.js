@@ -250,6 +250,13 @@ function initializeEventListeners() {
     if (toggleFlagManagerBtn) {
         toggleFlagManagerBtn.addEventListener('click', toggleFlagManager);
     }
+
+    document.querySelector('.close-flag-manager').addEventListener('click', () => {
+        const flagManager = document.querySelector('.Flag-manager');
+        if (flagManager) {
+            flagManager.style.display = 'none';
+        }
+    });
 }
 
 function getDefaultUSFlags(year) {

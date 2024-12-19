@@ -1,11 +1,11 @@
-# Calendar Generator for OneNote
+# Universal Calendar Generator
 
-A standalone web application that generates beautiful calendar tables that can be copied and pasted into OneNote or Word. The application features a clean, modern dark theme with soft white accents, making it easy to use in any lighting condition.
+A standalone web application that generates beautiful calendar tables that can be copied and pasted into any application. The application features a clean, modern dark theme with soft white accents, making it easy to use in any lighting condition.
 
 ## Features
 
 - **Multiple Calendar Formats**
-  - HTML format for OneNote
+  - HTML format for rich text editors
   - Word format for Microsoft Word
   - Text format for plain text editors
   - Markdown format for markdown editors
@@ -27,7 +27,7 @@ A standalone web application that generates beautiful calendar tables that can b
   - One-click copy to clipboard
   - Success notifications for user actions
   - Responsive layout for all screen sizes
-  - Works with any version of OneNote (including OneNote for Mac)
+  - Works with any application that accepts formatted text
 
 ## Setup
 

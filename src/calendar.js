@@ -951,11 +951,9 @@ function initializeContextMenu() {
     // Hide context menu when clicking outside
     document.addEventListener('click', (e) => {
         const contextMenu = document.getElementById('contextMenu');
-        const fadeTimeout = document.getElementById('fadeTimeout');
         
-        // Don't hide if clicking inside the menu or the timeout input
-        if (contextMenu && fadeTimeout && 
-            (contextMenu.contains(e.target) || fadeTimeout.contains(e.target))) {
+        // Don't hide if clicking inside the menu
+        if (contextMenu && contextMenu.contains(e.target)) {
             return;
         }
         

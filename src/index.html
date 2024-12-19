@@ -4,372 +4,567 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar Generator for OneNote</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poiret+One&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        /* Global styles */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: #1E1E1E;
+            color: #E6E6E6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .container {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            font-size: 1.1em;
+            transition: opacity 1s ease-in-out;
+            opacity: 1;
+        }
+
+        .container.fade-out {
+            opacity: 0;
+        }
+
+        .container.fade-in {
+            opacity: 1;
+        }
+
+        /* Base styles */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 16px;
             background-color: #1E1E1E;
             color: #E6E6E6;
             margin: 0;
             padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            color: #E6E6E6;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .controls-wrapper {
-            background-color: #2D2D2D;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .top-controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .date-input {
+            min-height: 100vh;
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
         }
 
-        .date-input label {
-            white-space: nowrap;
-            min-width: 80px;
-        }
-
-        .date-input input[type="date"] {
-            flex: 1;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #444;
-            background: #2D2D2D;
-            color: #E6E6E6;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #E6E6E6;
-            cursor: pointer;
-        }
-
-        .format-controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-        }
-
-        .format-option {
-            background-color: #363636;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .format-option:hover {
-            background-color: #404040;
-        }
-
-        .format-option.selected {
-            background-color: #E6E6E6;
-            color: #1E1E1E;
-        }
-
-        .format-option h3 {
-            margin: 0 0 5px 0;
-            font-size: 14px;
-        }
-
-        .format-option p {
-            margin: 0;
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        .button-group {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 15px;
-        }
-
-        .button {
-            background-color: #E6E6E6;
-            color: #1E1E1E;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-
-        .button:hover {
-            background-color: #d0d0d0;
-        }
-
-        .preview {
-            background-color: #2D2D2D;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .success-message {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #E6E6E6;
-            color: #1E1E1E;
-            padding: 10px 20px;
-            border-radius: 4px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .success-message.show {
-            opacity: 1;
+        h1, h2, h3, h4, h5, h6 {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 1.4em;
+            letter-spacing: 2px;
         }
 
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 300px;
+            display: flex;
             gap: 20px;
-        }
-
-        .holiday-manager {
-            background-color: #2D2D2D;
-            padding: 20px;
-            border-radius: 8px;
-            min-width: 400px;
-            margin-left: 20px;
-        }
-
-        .holiday-manager-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .holiday-manager-title {
-            margin: 0;
-            color: white;
-        }
-
-        .reset-holidays {
-            background: none;
-            border: none;
-            color: #E6E6E6;
-            cursor: pointer;
-            padding: 5px;
-            display: flex;
-            align-items: center;
-            transition: color 0.3s;
-        }
-
-        .reset-holidays:hover {
-            color: #8F8FFF;
-        }
-
-        .reset-holidays svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        .holiday-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        #holidayName {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #444;
-            background: #2D2D2D;
-            color: #E6E6E6;
-            width: 100%;
-        }
-
-        .holiday-dates {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .date-inputs {
-            display: flex;
-            gap: 12px;
-        }
-
-        .date-input {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .date-input label {
-            font-size: 12px;
-            color: #E6E6E6;
-            white-space: nowrap;
-        }
-
-        .date-input input[type="date"] {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #444;
-            background: #2D2D2D;
-            color: #E6E6E6;
-            width: 100%;
-            min-width: 150px;
-        }
-
-        .holiday-list {
-            max-height: 300px;
-            overflow-y: auto;
+            flex-wrap: wrap;
             margin-top: 10px;
         }
 
-        .holiday-item {
+        /* Common container styles */
+        .controls-container,
+        .Flag-manager {
+            background: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-width: 300px;
+            max-width: 300px;
+            width: 300px;
+            flex: 1;
+        }
+
+        #calendar-preview {
+            background: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            position: fixed;
+            min-width: 300px;
+            max-width: 300px;
+            width: 300px;
+            height: auto;
+            min-height: 100px;
+            max-height: none;
+            z-index: 1000;
+            cursor: move;
+            overflow: visible;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        #calendar-preview::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
+        }
+
+        .controls-content,
+        .Flag-content {
+            background: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-width: 268px;
+            max-width: 268px;
+            width: 268px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 100px;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .controls-content::-webkit-scrollbar,
+        .Flag-content::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
+        }
+
+        /* Format options grid */
+        .format-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .format-option {
+            background: #3D3D3D;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 4px;
+            cursor: pointer;
+            text-align: center;
+            min-width: 40px;
+        }
+
+        .format-option h3 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .format-option.selected {
+            background: #4D4D4D;
+            border-color: #666;
+        }
+
+        .format-option:hover {
+            background: #4D4D4D;
+        }
+
+        /* Header styles */
+        .controls-header,
+        .Flag-header,
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .Flag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .Flag-header button {
+            background: none;
+            border: none;
+            color: #E6E6E6;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .Flag-header button:hover {
+            opacity: 1;
+        }
+
+        .controls-icons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon {
+            cursor: pointer;
+            font-size: 1.2em;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .icon:hover {
+            opacity: 1;
+        }
+
+        .icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+
+        .toggle-flag-manager {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+            background: #3D3D3D;
+            cursor: pointer;
+        }
+
+        .toggle-flag-manager:hover {
+            background: #4D4D4D;
+        }
+
+        .toggle-flag-manager svg {
+            color: #E6E6E6;
+        }
+
+        /* Input styles */
+        input[type="text"],
+        input[type="date"] {
+            background: #444;
+            border: none;
+            color: #E6E6E6;
+            padding: 4px;
+            border-radius: 4px;
+            width: 260px;
+        }
+
+        /* Button styles */
+        button {
+            background-color: #3D3D3D;
+            color: #E6E6E6;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 2px 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            letter-spacing: 1px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            height: 28px;
+            min-height: 28px;
+        }
+
+        button:hover {
+            background-color: #4D4D4D;
+        }
+
+        button:active {
+            background-color: #2D2D2D;
+        }
+
+        /* Layout containers */
+        .date-inputs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .date-input {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* Flag list */
+        .Flag-list {
+            max-height: 300px;
+            overflow-y: auto;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .Flag-list::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
+        }
+
+        .Flag-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 8px;
-            background: #363636;
-            border-radius: 4px;
-            margin-bottom: 8px;
+            border-bottom: 1px solid #444;
         }
 
-        .holiday-item:last-child {
+        .Flag-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* Calendar preview */
+        .preview {
+            overflow: visible;
+            padding: 10px;
+            background: #2D2D2D;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .preview h2 {
+            margin-top: 0;
+        }
+
+        .preview table {
+            background: #2D2D2D;
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .preview table:last-child {
             margin-bottom: 0;
         }
 
-        .holiday-info {
-            flex: 1;
+        /* Smooth ramping fade animations */
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
         }
 
-        .holiday-name {
-            font-size: 14px;
-            margin-bottom: 2px;
+        .fade-in {
+            opacity: 1;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 1, 1);
         }
 
-        .holiday-date {
-            font-size: 12px;
+        /* Context menu styles */
+        .context-menu {
+            display: none;
+            position: fixed;
+            background: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 8px 0;
+            min-width: 200px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .context-menu.show {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .context-menu-item:hover {
+            background: #3D3D3D;
+        }
+
+        .context-menu input {
+            width: 60px;
+            padding: 4px;
+            margin-left: 8px;
+            background: #3D3D3D;
+            border: 1px solid #444;
+            color: #E6E6E6;
+            border-radius: 4px;
+        }
+
+        /* Orange Clock Styles */
+        .orange-clock {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-family: 'Poiret One', cursive;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 1000;
+            pointer-events: none;
+            color: #FFA500;
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+        }
+
+        .orange-clock.visible {
+            opacity: 1;
+            animation: glow 3s infinite;
+        }
+
+        .orange-clock .date {
+            font-size: 3em;
+            margin-bottom: 0.8em;
+            letter-spacing: 2px;
+        }
+
+        .orange-clock .time {
+            font-size: 6em;
+            letter-spacing: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poiret One', cursive;
+            font-weight: 400;
+        }
+
+        .orange-clock .digit {
+            font-size: 1em;
+            display: inline-block;
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+            width: 0.7em;
+            text-align: center;
+            position: relative;
+        }
+
+        .orange-clock .digit.fade-out {
+            opacity: 0;
+        }
+
+        .orange-clock .digit.fade-in {
+            opacity: 1;
+        }
+
+        .orange-clock .digit.new-digit {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        .orange-clock .separator {
+            display: inline-block;
+            width: 0.4em;
+            text-align: center;
+            position: relative;
+            margin: 0 0.1em;
+            top: -0.1em;
             opacity: 0.8;
         }
 
-        .delete-holiday {
-            background: none;
-            border: none;
-            color: #FF6B6B;
-            cursor: pointer;
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-
-        .delete-holiday:hover {
-            color: #FF4F4F;
+        @keyframes glow {
+            0% { text-shadow: 0 0 10px rgba(255, 165, 0, 0.3); }
+            50% { text-shadow: 0 0 20px rgba(255, 165, 0, 0.5); }
+            100% { text-shadow: 0 0 10px rgba(255, 165, 0, 0.3); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Calendar Generator for OneNote</h1>
-        
+    <div class="container fade-in">
+                
         <div class="main-content">
-            <div class="left-content">
-                <div class="controls-wrapper">
-                    <div class="top-controls">
-                        <div class="date-input">
-                            <label for="startDate">Start Date:</label>
-                            <input type="date" id="startDate" name="startDate">
+            <div class="controls-container draggable">
+                <div class="controls-header">
+                    <h3 class="controls-title">Calendar Controls</h3>
+                    <div class="controls-icons">
+                        <div class="icon toggle-flag-manager" title="Toggle Flag Manager">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                <line x1="4" y1="22" x2="4" y2="15"></line>
+                            </svg>
                         </div>
-                        <div class="date-input">
-                            <label for="endDate">End Date:</label>
-                            <input type="date" id="endDate" name="endDate">
+                    </div>
+                </div>
+                <div class="controls-content">
+                    <div class="top-controls">
+                        <div class="date-inputs">
+                            <div class="date-input">
+                                <label for="startDate">Start Date:</label>
+                                <input type="date" id="startDate" name="startDate">
+                            </div>
+                            <div class="date-input">
+                                <label for="endDate">End Date:</label>
+                                <input type="date" id="endDate" name="endDate">
+                            </div>
                         </div>
                         <label class="checkbox-label">
                             <input type="checkbox" id="dimWeekends" name="dimWeekends">
                             Dim Weekends
                         </label>
                     </div>
-                    
-                    <div class="format-controls">
+                    <div class="format-options">
                         <div class="format-option selected" data-format="html">
-                            <h3>HTML Table</h3>
-                            <p>Rich formatting, best for OneNote Online</p>
+                            <h3>HTML</h3>
                         </div>
                         <div class="format-option" data-format="word">
-                            <h3>Word/OneNote Table</h3>
-                            <p>Optimized for Word and OneNote desktop</p>
+                            <h3>ONE</h3>
                         </div>
                         <div class="format-option" data-format="text">
-                            <h3>Plain Text</h3>
-                            <p>Simple text table, works everywhere</p>
+                            <h3>PLN</h3>
                         </div>
                         <div class="format-option" data-format="markdown">
-                            <h3>Markdown</h3>
-                            <p>For markdown-compatible editors</p>
+                            <h3>_MD</h3>
                         </div>
                     </div>
-
-                    <div class="button-group">
-                        <button id="copy" class="button">Copy Calendars to Clipboard</button>
-                    </div>
-                </div>
-
-                <div id="calendar-output">
-                    <div class="preview"></div>
-                    <div class="success-message" id="successMessage">Copied to clipboard!</div>
                 </div>
             </div>
 
-            <div class="holiday-manager">
-                <div class="holiday-manager-header">
-                    <h2 class="holiday-manager-title">Holiday Manager</h2>
-                    <button class="reset-holidays" id="resetHolidays" title="Reset to default US holidays">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                            <path d="M3 3v5h5"></path>
+            <div id="calendar-preview" class="draggable">
+                <div class="preview-header">
+                    <h2 class="preview-title">Calendar Preview</h2>
+                    <button class="hide-preview" title="Hide Preview">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                            <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
-                <div class="holiday-form">
-                    <input type="text" id="holidayName" placeholder="Holiday Name" />
-                    <div class="holiday-dates">
-                        <div class="date-inputs">
-                            <div class="date-input">
-                                <label for="holidayStartDate">Start Date:</label>
-                                <input type="date" id="holidayStartDate" />
-                            </div>
-                            <div class="date-input">
-                                <label for="holidayEndDate">End Date:</label>
-                                <input type="date" id="holidayEndDate" />
-                            </div>
+                <div class="preview"></div>
+            </div>
+
+            <div class="Flag-manager draggable">
+                <div class="Flag-header">
+                    <h3 class="Flag-title">Flag Manager</h3>
+                    <div>
+                        <button class="close-flag-manager" title="Close Flag Manager">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
+                        <button class="reset-Flags" title="Reset to default US Flags">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="Flag-content">
+                    <input type="text" id="FlagName" placeholder="Flag Name" />
+                    <div class="date-inputs">
+                        <div class="date-input">
+                            <label for="FlagStartDate">Start Date:</label>
+                            <input type="date" id="FlagStartDate" />
+                        </div>
+                        <div class="date-input">
+                            <label for="FlagEndDate">End Date:</label>
+                            <input type="date" id="FlagEndDate" />
                         </div>
                     </div>
-                    <button id="addHoliday" class="button">Add Holiday</button>
+                    <button id="addFlag" class="button">Add Flag</button>
                 </div>
-                <div class="holiday-list" id="holidayList">
-                    <!-- Holidays will be populated here -->
+                <div class="Flag-list" id="FlagList">
+                    <!-- Flags will be populated here -->
                 </div>
             </div>
+
+            <!-- Add context menu -->
+            <div class="context-menu" id="contextMenu">
+                <div class="context-menu-item">
+                    Fade Timeout: <input type="number" id="fadeTimeout" min="1" max="60" value="10"> seconds
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="orange-clock">
+        <div class="date"></div>
+        <div class="time">
+            <span class="digit">2</span><span class="digit">2</span>
+            <span class="separator">:</span>
+            <span class="digit">1</span><span class="digit">5</span>
+            <span class="separator">:</span>
+            <span class="digit">3</span><span class="digit">5</span>
         </div>
     </div>
 </body>
